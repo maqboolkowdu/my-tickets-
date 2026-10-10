@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>OpsLog — Work Journal</title>
+  <meta name="description" content="Personal IT operations work journal with a voice check-in assistant, task board and daily to yearly reports." />
+  <meta name="theme-color" content="#0b1020" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/app.css" />
+  <script>
+    // Apply theme before paint to avoid a flash.
+    try { const s = JSON.parse(localStorage.getItem('opslog:settings:v1') || '{}'); if (s.theme && s.theme !== 'system') document.documentElement.dataset.theme = s.theme; } catch (e) {}
+  </script>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Main navigation">
+      <a class="brand" href="#/dashboard">
+        <img src="assets/icons/icon.svg" alt="" width="34" height="34" />
+        <span><strong>OpsLog</strong><small>Work Journal</small></span>
+      </a>
+      <nav class="nav" id="nav"></nav>
+      <div class="side-card" id="sideNext"></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-title">
+          <h1 id="pageTitle">Dashboard</h1>
+          <p id="pageSub" class="muted"></p>
+        </div>
+        <div class="topbar-actions">
+          <span class="arm-pill" id="armPill" title="Browsers only allow sound after you interact with the page once">🔔 Click anywhere to arm call sound</span>
+          <button class="icon-btn" id="btnShowcase" title="Showcase mode (mask emails &amp; IPs)"></button>
+          <button class="icon-btn" id="btnTheme" title="Toggle theme"></button>
+          <button class="btn btn-ghost hide-sm" id="btnQuickVoice" title="Dictate an entry"></button>
+          <button class="btn btn-primary" id="btnNew"></button>
+        </div>
+      </header>
+      <section id="view" class="view" tabindex="-1"></section>
+    </main>
+  </div>
+
+  <nav class="bottom-nav" id="bottomNav" aria-label="Mobile navigation"></nav>
+
+  <button class="fab" id="fabCall" title="Call your assistant" aria-label="Call your assistant"></button>
+
+  <!-- Entry editor -->
+  <dialog id="editor" class="modal">
+    <form method="dialog" id="editorForm" class="modal-card">
+      <header class="modal-head">
+        <h2 id="editorTitle">New entry</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close"></button>
+      </header>
+      <div class="modal-body">
+        <label class="field full">
+          <span>What did you do? <small class="muted">— type or dictate; it's auto-categorised</small></span>
+          <div class="input-mic">
+            <textarea id="fDetails" rows="3" placeholder="e.g. Reset MFA for a student and revoked sessions, took 10 mins, INC123456"></textarea>
+            <button type="button" class="icon-btn mic-btn" id="fMic" title="Dictate"></button>
+          </div>
+        </label>
+        <label class="field full"><span>Title</span><input id="fTitle" required maxlength="140" /></label>
+        <div class="grid-3">
+          <label class="field"><span>Area</span><select id="fCategory"></select></label>
+          <label class="field"><span>Type</span>
+            <select id="fType"><option value="entry">Entry (work done)</option><option value="task">Task (to do)</option><option value="job">Job / project</option></select></label>
+          <label class="field"><span>Status</span>
+            <select id="fStatus"><option value="done">Done</option><option value="in-progress">In progress</option><option value="open">Open</option><option value="blocked">Blocked</option></select></label>
+          <label class="field"><span>Priority</span>
+            <select id="fPriority"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="critical">Critical</option></select></label>
+          <label class="field"><span>Time spent (min)</span><input id="fMinutes" type="number" min="0" step="5" inputmode="numeric" /></label>
+          <label class="field"><span>Ticket / ref</span><input id="fTicket" placeholder="INC0012345" /></label>
+          <label class="field"><span>When</span><input id="fWhen" type="datetime-local" /></label>
+          <label class="field"><span>Due (tasks)</span><input id="fDue" type="date" /></label>
+          <label class="field"><span>Tags</span><input id="fTags" placeholder="vip, outage" /></label>
+        </div>
+      </div>
+      <footer class="modal-foot">
+        <button type="button" class="btn btn-danger-ghost" id="fDelete">Delete</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary" id="fSave">Save</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Report modal (wrap-up) -->
+  <dialog id="wrapup" class="modal">
+    <div class="modal-card wide">
+      <header class="modal-head"><h2 id="wrapTitle">Wrap-up</h2><button type="button" class="icon-btn" data-close aria-label="Close"></button></header>
+      <div class="modal-body" id="wrapBody"></div>
+    </div>
+  </dialog>
+
+  <!-- Incoming / active call -->
+  <div id="call" class="call hidden" role="dialog" aria-modal="true" aria-labelledby="callTitle" data-phase="ringing">
+    <div class="call-bg"></div>
+    <div class="call-card">
+      <div class="call-top"><span id="callStatus">Incoming call…</span><span id="callTimer" class="mono"></span></div>
+      <div class="caller">
+        <div class="avatar-wrap"><span class="pulse"></span><span class="pulse p2"></span><div class="avatar">
+          <svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><defs><linearGradient id="ag" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#7dd3fc"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#ag)"/><path d="M18 34a14 14 0 0 1 28 0" fill="none" stroke="#0b1020" stroke-width="4" stroke-linecap="round"/><rect x="13" y="32" width="8" height="12" rx="3" fill="#0b1020"/><rect x="43" y="32" width="8" height="12" rx="3" fill="#0b1020"/><path d="M47 44c0 5-6 7-11 7" fill="none" stroke="#0b1020" stroke-width="3" stroke-linecap="round"/></svg>
+        </div></div>
+        <h2 id="callTitle">Ava · OpsLog Assistant</h2>
+        <p id="callSub" class="call-sub">Work check-in</p>
+        <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="call-convo" id="callConvo" aria-live="polite"></div>
+      <div class="call-live" id="callLive"></div>
+      <form class="call-form" id="callForm" autocomplete="off">
+        <input id="callText" placeholder="Type your update and press Enter…" aria-label="Type your update" />
+        <button class="icon-btn" type="submit" aria-label="Send" id="callSend"></button>
+      </form>
+      <div class="call-actions ring-actions">
+        <div class="act"><button class="round red" id="btnDecline" aria-label="Decline"></button><span>Decline</span></div>
+        <div class="act"><button class="round grey" id="btnSnooze" aria-label="Snooze 10 minutes"></button><span>10 min</span></div>
+        <div class="act"><button class="round green shake" id="btnAnswer" aria-label="Answer"></button><span>Answer</span></div>
+      </div>
+      <div class="call-actions active-actions">
+        <div class="act"><button class="round grey" id="btnMic" aria-label="Toggle microphone"></button><span>Mic</span></div>
+        <div class="act"><button class="round grey" id="btnKeyboard" aria-label="Keyboard"></button><span>Type</span></div>
+        <div class="act"><button class="round red" id="btnEnd" aria-label="End call"></button><span>End</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="assets/js/util.js"></script>
+  <script src="assets/js/categories.js"></script>
+  <script src="assets/js/store.js"></script>
+  <script src="assets/js/parser.js"></script>
+  <script src="assets/js/voice.js"></script>
+  <script src="assets/js/reports.js"></script>
+  <script src="assets/js/charts.js"></script>
+  <script src="assets/js/agent.js"></script>
+  <script src="assets/js/demo.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

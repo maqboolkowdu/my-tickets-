@@ -1,0 +1,21 @@
+{
+  "name": "OpsLog — Work Journal",
+  "short_name": "OpsLog",
+  "description": "Personal IT operations work journal with a voice check-in assistant and daily to yearly reports.",
+  "start_url": "./index.html#/dashboard",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#070b16",
+  "theme_color": "#0b1020",
+  "orientation": "any",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "shortcuts": [
+    { "name": "Call assistant", "url": "./index.html?call=manual#/dashboard" },
+    { "name": "Reports", "url": "./index.html#/reports" }
+  ]
+}
