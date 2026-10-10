@@ -112,9 +112,12 @@ Open **Reports**, pick *Day / Week / Month / Quarter / Year*, and use ◀ ▶ to
 
 The repo includes `.github/workflows/pages.yml`, which deploys the site on every push to `main`.
 
-1. Merge this branch into `main`.
-2. In GitHub go to **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-3. After the workflow runs, the site is live at `https://<your-user>.github.io/my-tickets-/`.
+1. Make sure the code is on `main`. **Settings → General → Default branch** should be `main`.
+2. Go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**.
+3. Go to **Actions → Deploy OpsLog to GitHub Pages → Run workflow** (or just push to `main`).
+4. When the run turns green, the site is live at **https://maqboolkowdu.github.io/my-tickets-/**.
+
+> If the first run fails with *"Get Pages site failed"*, Pages wasn't enabled yet. Do step 2, then re-run the workflow.
 
 > Your work data is **never** uploaded to GitHub. The site is only the app code; entries stay in each browser's local storage.
 
