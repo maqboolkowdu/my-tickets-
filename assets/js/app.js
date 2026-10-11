@@ -1,18 +1,20 @@
 /* OpsLog — views, routing and UI wiring. */
 (function (WL) {
   'use strict';
-  const { U, Store, Categories, Parser, Reports, Charts, Agent, Voice } = WL;
+  const { U, Store, Categories, Parser, Reports, Charts, Agent, Voice, Library } = WL;
   const $ = U.$, $$ = U.$$;
 
   const ROUTES = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
     { id: 'log', label: 'Work Log', icon: 'log' },
-    { id: 'tasks', label: 'Tasks & Jobs', icon: 'tasks' },
+    { id: 'tasks', label: 'Tasks & Jobs', short: 'Tasks', icon: 'tasks' },
+    { id: 'library', label: 'Task Library', short: 'Library', icon: 'library' },
     { id: 'reports', label: 'Reports', icon: 'reports' },
     { id: 'settings', label: 'Settings', icon: 'settings' },
   ];
-  const STATUS = { open: 'Open', 'in-progress': 'In progress', blocked: 'Blocked', done: 'Done' };
-  const ui = { route: 'dashboard', report: { kind: 'week', anchor: new Date() }, log: { q: '', cat: '', type: '', status: '', period: 'month' } };
+  const STATUS = { open: 'Open', 'in-progress': 'In progress', blocked: 'Blocked', done: 'Done', skipped: 'Skipped' };
+  const PR_ORDER = { critical: 0, high: 1, normal: 2, low: 3 };
+  const ui = { route: 'dashboard', report: { kind: 'week', anchor: new Date() }, log: { q: '', cat: '', type: '', status: '', period: 'month' }, focusLoc: '', tasksFilter: 'all' };
 
   /* ---------------- helpers ---------------- */
   const chip = (id) => { const c = Categories.get(id); return `<span class="chip" style="--cat:${c.color}">${U.esc(c.name)}</span>`; };
@@ -20,6 +22,7 @@
   const stBadge = (s) => `<span class="badge st-${s}">${STATUS[s] || s}</span>`;
   const card = (title, body, { cls = '', actions = '' } = {}) => `<article class="card ${cls}"><header class="card-head"><h3>${title}</h3>${actions}</header><div class="card-body">${body}</div></article>`;
   const empty = (msg, cta = '') => `<div class="empty"><div class="empty-ico">${U.icon('spark')}</div><p>${msg}</p>${cta}</div>`;
+  const locBadge = (l) => (l ? `<span class="badge loc">${U.esc(l)}</span>` : '');
   const greetWord = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
 
   function entryRow(e, { showDate = false } = {}) {
@@ -30,7 +33,7 @@
       <div class="ri-main">
         <div class="ri-title">${U.safe(e.title)}</div>
         <div class="ri-meta">${chip(e.category)}${e.type !== 'entry' ? `<span class="badge">${e.type}</span>` : ''}${e.status !== 'done' ? stBadge(e.status) : ''}${prBadge(e.priority)}
-          ${e.minutes ? `<span class="meta">${U.icon('clock')}${U.fmtDuration(e.minutes)}</span>` : ''}${e.ticket ? `<span class="meta mono">${U.safe(e.ticket)}</span>` : ''}
+          ${e.minutes ? `<span class="meta">${U.icon('clock')}${U.fmtDuration(e.minutes)}</span>` : ''}${e.ticket ? `<span class="meta mono">${U.safe(e.ticket)}</span>` : ''}${locBadge(e.location)}
           ${e.source === 'call' || e.source === 'voice' ? `<span class="meta" title="Captured by voice">${U.icon('mic')}</span>` : ''}</div>
       </div>
       <div class="ri-actions"><button class="icon-btn sm" data-edit="${e.id}" title="Edit">${U.icon('edit')}</button></div>
@@ -40,7 +43,7 @@
   function taskCard(e) {
     const overdue = e.due && e.due < U.ymd(new Date()) && e.status !== 'done';
     return `<div class="task-card" draggable="true" data-id="${e.id}" style="--cat:${Categories.get(e.category).color}">
-      <div class="tc-top">${chip(e.category)}${prBadge(e.priority)}${e.type === 'job' ? '<span class="badge">job</span>' : ''}</div>
+      <div class="tc-top">${chip(e.category)}${prBadge(e.priority)}${e.type === 'job' ? '<span class="badge">job</span>' : ''}${e.ticket ? `<span class="badge mono">${U.safe(e.ticket)}</span>` : ''}${locBadge(e.location)}</div>
       <div class="tc-title" data-edit="${e.id}">${U.safe(e.title)}</div>
       <div class="tc-foot">${e.due ? `<span class="meta ${overdue ? 'overdue' : ''}">${U.icon('clock')}${U.relDay(U.parseYmd(e.due))}</span>` : '<span></span>'}
         ${e.status !== 'done' ? `<button class="icon-btn sm ok" data-done="${e.id}" title="Mark done">${U.icon('check')}</button>` : ''}</div>
@@ -71,9 +74,9 @@
 
   /* ---------------- shell ---------------- */
   function renderShell() {
-    const nav = ROUTES.map((r) => `<a href="#/${r.id}" data-route="${r.id}">${U.icon(r.icon)}<span>${r.label}</span></a>`).join('');
-    $('#nav').innerHTML = nav;
-    $('#bottomNav').innerHTML = nav;
+    const nav = (short) => ROUTES.map((r) => `<a href="#/${r.id}" data-route="${r.id}">${U.icon(r.icon)}<span>${short && r.short ? r.short : r.label}</span></a>`).join('');
+    $('#nav').innerHTML = nav(false);
+    $('#bottomNav').innerHTML = nav(true);
     $('#btnNew').innerHTML = `${U.icon('plus')}<span class="hide-xs">New entry</span>`;
     $('#btnQuickVoice').innerHTML = `${U.icon('mic')}<span>Dictate</span>`;
     $('#fabCall').innerHTML = U.icon('phone');
@@ -122,10 +125,10 @@
     const r = ROUTES.find((x) => x.id === ui.route);
     $('#pageTitle').textContent = r.label;
     const v = $('#view');
-    const views = { dashboard: viewDashboard, log: viewLog, tasks: viewTasks, reports: viewReports, settings: viewSettings };
+    const views = { dashboard: viewDashboard, log: viewLog, tasks: viewTasks, library: () => WL.LibraryUI.view(), reports: viewReports, settings: viewSettings };
     v.innerHTML = views[ui.route]();
     v.className = `view view-${ui.route}`;
-    afterRender[ui.route] && afterRender[ui.route]();
+    if (ui.route === 'library') WL.LibraryUI.after(); else afterRender[ui.route] && afterRender[ui.route]();
     renderSideNext();
   }
 
@@ -136,7 +139,9 @@
     const day = Reports.aggregate(Reports.range('day'));
     const week = Reports.aggregate(Reports.range('week'));
     const month = Reports.aggregate(Reports.range('month'));
-    const open = Store.openTasks().sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
+    const openAll = Store.openTasks();
+    const open = openAll.filter((e) => !e.templateId).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
+    const routineOpen = openAll.length - open.length;
     const n = nextCallText();
     const st = streak();
     const rate = week.calls.total ? week.calls.answered / week.calls.total : 0;
@@ -172,10 +177,12 @@
         ${kpi('Today', day.items.length, `${day.done} done`, 'log')}
         ${kpi('Time today', U.fmtDuration(day.minutes), 'hands-on time', 'clock')}
         ${kpi('This week', week.items.length, `${week.cats.length} areas`, 'reports')}
-        ${kpi('Open tasks', open.length, open.filter((t) => t.due && t.due < U.ymd(new Date())).length + ' overdue', 'tasks')}
+        ${kpi('Open tasks', open.length, routineOpen ? `+ ${routineOpen} routine checks` : open.filter((t) => t.due && t.due < U.ymd(new Date())).length + ' overdue', 'tasks')}
         ${kpi('Streak', st + ' day' + (st === 1 ? '' : 's'), 'consecutive workdays', 'flame')}
         <div class="kpi"><div class="kpi-ring">${Charts.ring(rate)}</div><div><div class="kpi-label">Check-ins answered</div><div class="kpi-sub">${week.calls.answered}/${week.calls.total} this week</div></div></div>
       </div>
+
+      ${focusCard()}
 
       <div class="grid-2">
         ${card(`Today's timeline`, day.items.length ? `<div class="timeline">${day.items.slice().reverse().map((e) => entryRow(e)).join('')}</div>` : empty('No entries yet today.', `<button class="btn btn-ghost" data-call>${U.icon('phone')} Log by voice</button>`), { actions: `<a class="link-btn" href="#/log">View log →</a>` })}
@@ -188,9 +195,35 @@
       </div>
 
       ${card('Activity — last 12 months', Charts.heatmap(heat), { cls: 'heat-card', actions: `<a class="link-btn" href="#/reports" data-report="year">Yearly report →</a>` })}
-      ${!Store.entries.length ? `<div class="banner">${U.icon('spark')}<div><b>Want to see it in action?</b> Load a year of sample IT-ops data to explore the dashboards — you can remove it with one click later.</div><button class="btn btn-ghost" id="btnDemo">Load sample data</button></div>` : ''}
+      ${!Store.entries.some((e) => !e.templateId) ? `<div class="banner">${U.icon('spark')}<div><b>Want to see it in action?</b> Load a year of sample IT-ops data to explore the dashboards — you can remove it with one click later.</div><button class="btn btn-ghost" id="btnDemo">Load sample data</button></div>` : ''}
     `;
   }
+  /* Today's routine checks (library tickets due today), ordered like the old "Today's Focus". */
+  function focusCard() {
+    const all = Library.todays();
+    const pkgOn = Library.packages().some((p) => p.auto && p.mode !== 'manual') && Store.settings.routinesEnabled !== false;
+    if (!all.length) {
+      return card("Today's routine", empty(pkgOn ? 'No routine checks are due today.' : 'Routines are off. Pick tasks from the library or turn on a routine.', `<a class="btn btn-ghost" href="#/library">${U.icon('library')} Open Task Library</a>`), { cls: 'focus-card' });
+    }
+    const locs = [...new Set(all.map((e) => e.location).filter(Boolean))];
+    const list = all.filter((e) => !ui.focusLoc || e.location === ui.focusLoc)
+      .sort((a, b) => (a.status === 'done') - (b.status === 'done') || PR_ORDER[a.priority] - PR_ORDER[b.priority] || a.ticket.localeCompare(b.ticket));
+    const done = all.filter((e) => e.status === 'done').length;
+    const pct = Math.round((done / all.length) * 100);
+    const label = pct === 100 ? 'Outstanding — everything resolved' : pct >= 75 ? 'Excellent day' : pct >= 50 ? 'Solid progress' : pct >= 25 ? 'Building momentum' : pct > 0 ? 'Warming up' : "Let's get started";
+    return card(`Today's routine <span class="muted small">${done}/${all.length} done · ${label}</span>`, `
+      <div class="progress"><span style="width:${pct}%"></span></div>
+      ${locs.length ? `<div class="chips" role="group" aria-label="Filter by campus"><button class="fchip ${!ui.focusLoc ? 'on' : ''}" data-focus-loc="">All campuses</button>${locs.map((l) => `<button class="fchip ${ui.focusLoc === l ? 'on' : ''}" data-focus-loc="${U.esc(l)}">${U.esc(l)}</button>`).join('')}</div>` : ''}
+      <div class="focus-list">${list.map((e) => `
+        <div class="focus-row ${e.status === 'done' ? 'is-done' : ''}" style="--cat:${Categories.get(e.category).color}">
+          <button class="tick" data-toggle-done="${e.id}" aria-pressed="${e.status === 'done'}" title="${e.status === 'done' ? 'Mark as open' : 'Mark done'}">${U.icon('check')}</button>
+          <span class="badge mono">${U.esc(e.ticket)}</span>
+          <span class="fr-title" data-edit="${e.id}" title="${U.safe(e.title)}">${U.safe(e.title)}</span>
+          <span class="fr-meta">${prBadge(e.priority)}${locBadge(e.location)}${e.status === 'in-progress' || e.status === 'blocked' ? stBadge(e.status) : ''}</span>
+        </div>`).join('')}</div>`,
+    { cls: 'focus-card', actions: `<a class="link-btn" href="#/library">Library & routines →</a>` });
+  }
+
   function kpi(label, val, sub, icon) {
     return `<div class="kpi"><div class="kpi-ico">${U.icon(icon)}</div><div><div class="kpi-label">${label}</div><div class="kpi-val">${val}</div><div class="kpi-sub">${sub}</div></div></div>`;
   }
@@ -234,7 +267,7 @@
   /* ---------------- Tasks ---------------- */
   function viewTasks() {
     $('#pageSub').textContent = 'Drag cards between columns to update status';
-    const tasks = Store.entries.filter((e) => e.type !== 'entry');
+    const tasks = Store.entries.filter((e) => e.type !== 'entry' && (ui.tasksFilter === 'all' || (ui.tasksFilter === 'routine' ? !!e.templateId : !e.templateId)));
     const weekAgo = U.addDays(new Date(), -7);
     const cols = [
       ['open', 'Open'], ['in-progress', 'In progress'], ['blocked', 'Blocked'], ['done', 'Done (7 days)'],
@@ -243,6 +276,7 @@
       <form class="quick wide" id="taskForm" autocomplete="off">
         <div class="quick-input"><input id="taskText" placeholder="Add a task or job, e.g. “Renew SSL cert on VPN gateway by Thursday, high priority”" /><button type="button" class="icon-btn mic-btn" id="taskMic">${U.icon('mic')}</button></div>
         <button class="btn btn-primary" type="submit">${U.icon('plus')} Add task</button>
+        <select id="tasksFilter" aria-label="Show">${[['all', 'All tasks'], ['adhoc', 'My tasks only'], ['routine', 'Library & routine checks']].map(([v, l]) => `<option value="${v}" ${ui.tasksFilter === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
       </form>
       <div class="board">${cols.map(([st, label]) => {
         let list = tasks.filter((t) => t.status === st);
@@ -435,6 +469,7 @@
         U.toast('Task added', 'success');
       });
       $('#taskMic').addEventListener('click', () => dictateInto(input, $('#taskMic')));
+      $('#tasksFilter').addEventListener('change', (e) => { ui.tasksFilter = e.target.value; render(); });
       // drag & drop
       let dragId = null;
       $$('.task-card').forEach((c) => {
@@ -537,7 +572,7 @@
   function openEditor(id = null, { dictate = false } = {}) {
     const dlg = $('#editor');
     editing = id ? Store.get(id) : null;
-    touched = new Set(editing ? ['fTitle', 'fCategory', 'fType', 'fStatus', 'fPriority', 'fMinutes', 'fTicket'] : []);
+    touched = new Set(editing ? ['fTitle', 'fCategory', 'fType', 'fStatus', 'fPriority', 'fMinutes', 'fTicket', 'fLocation'] : []);
     $('#fCategory').innerHTML = Categories.list.map((c) => `<option value="${c.id}">${c.name}</option>`).join('');
     const e = editing || { title: '', details: '', category: 'other', type: 'entry', status: 'done', priority: 'normal', minutes: '', ticket: '', when: new Date().toISOString(), due: '', tags: [] };
     $('#editorTitle').textContent = editing ? 'Edit item' : 'New entry';
@@ -549,6 +584,8 @@
     $('#fPriority').value = e.priority;
     $('#fMinutes').value = e.minutes || '';
     $('#fTicket').value = e.ticket || '';
+    $('#fLocation').innerHTML = ['', ...Library.LOCATIONS].map((l) => `<option value="${l}">${l || '—'}</option>`).join('');
+    $('#fLocation').value = e.location || '';
     $('#fWhen').value = toLocalInput(new Date(e.when));
     $('#fDue').value = e.due || '';
     $('#fTags').value = (e.tags || []).join(', ');
@@ -559,12 +596,12 @@
   }
   function wireEditor() {
     const dlg = $('#editor');
-    ['fTitle', 'fCategory', 'fType', 'fStatus', 'fPriority', 'fMinutes', 'fTicket'].forEach((id) => $('#' + id).addEventListener('input', () => touched.add(id)));
+    ['fTitle', 'fCategory', 'fType', 'fStatus', 'fPriority', 'fMinutes', 'fTicket', 'fLocation'].forEach((id) => $('#' + id).addEventListener('input', () => touched.add(id)));
     const autofill = () => {
       const p = Parser.parseOne($('#fDetails').value, {});
       if (!$('#fDetails').value.trim()) return;
       const set = (id, v) => { if (!touched.has(id) && v != null && v !== '') $('#' + id).value = v; };
-      set('fTitle', p.title); set('fCategory', p.category); set('fType', p.type); set('fStatus', p.status); set('fPriority', p.priority); set('fMinutes', p.minutes); set('fTicket', p.ticket);
+      set('fTitle', p.title); set('fCategory', p.category); set('fType', p.type); set('fStatus', p.status); set('fPriority', p.priority); set('fMinutes', p.minutes); set('fTicket', p.ticket); set('fLocation', p.location);
       if (p.due && !$('#fDue').value) $('#fDue').value = p.due;
     };
     $('#fDetails').addEventListener('input', U.debounce(autofill, 120));
@@ -574,7 +611,7 @@
       const data = {
         title: $('#fTitle').value.trim() || 'Untitled', details: $('#fDetails').value.trim(), category: $('#fCategory').value,
         type: $('#fType').value, status: $('#fStatus').value, priority: $('#fPriority').value,
-        minutes: Number($('#fMinutes').value) || null, ticket: $('#fTicket').value.trim(),
+        minutes: Number($('#fMinutes').value) || null, ticket: $('#fTicket').value.trim(), location: $('#fLocation').value,
         when: new Date($('#fWhen').value || Date.now()).toISOString(), due: $('#fDue').value || null,
         tags: $('#fTags').value.split(',').map((t) => t.trim()).filter(Boolean),
       };
@@ -630,6 +667,10 @@
       if (call) { e.preventDefault(); Agent.startManual(); return; }
       const ed = e.target.closest('[data-edit]');
       if (ed && !e.target.closest('#callConvo')) { openEditor(ed.dataset.edit); return; }
+      const tg = e.target.closest('[data-toggle-done]');
+      if (tg) { const x = Store.get(tg.dataset.toggleDone); if (x) Store.update(x.id, { status: x.status === 'done' ? 'open' : 'done' }); return; }
+      const fl = e.target.closest('[data-focus-loc]');
+      if (fl) { ui.focusLoc = fl.dataset.focusLoc; render(); return; }
       const dn = e.target.closest('[data-done]');
       if (dn) { Store.update(dn.dataset.done, { status: 'done' }); U.toast('Nice — marked done ✔', 'success'); return; }
       const rep = e.target.closest('[data-report]');
@@ -654,7 +695,7 @@
       if (e.key === 'c') { e.preventDefault(); Agent.startManual(); }
     });
     Store.on((what) => { if (what === 'entries' || what === 'settings' || what === 'calls') refresh(); });
-    setInterval(renderSideNext, 30000);
+    setInterval(() => { renderSideNext(); runRoutines(); }, 30000);
   }
 
   // Re-render the current view without losing focus in an input on that view.
@@ -674,17 +715,29 @@
     }
   }
 
+  // Assign today's routine checks once per day (and again if the app stays open past midnight).
+  let routineDay = '';
+  function runRoutines() {
+    const today = U.ymd(new Date());
+    if (routineDay === today) return;
+    routineDay = today;
+    const created = Library.autoRun();
+    if (created.length) U.toast(`Assigned ${created.length} routine check${created.length > 1 ? 's' : ''} for today`, 'success', 4500);
+  }
+
   function init() {
     renderShell();
     applyTheme();
     wireEditor();
     wireGlobal();
     Agent.init();
+    runRoutines();
     route();
     registerSW();
     if (!Store.settings.name) setTimeout(() => U.toast('Tip: add your name in Settings so your assistant can greet you.', 'info', 5000), 1500);
   }
 
-  WL.App = { init, refresh, openEditor, showWrapUp, render };
+  WL.App = { init, refresh, openEditor, showWrapUp, render, go: (r) => { location.hash = '#/' + r; } };
+  WL.AppUI = { chip, prBadge, stBadge, locBadge, card, empty, kpi, entryRow, taskCard, STATUS, PR_ORDER };
   document.addEventListener('DOMContentLoaded', init);
 })(window.WL);

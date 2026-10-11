@@ -49,6 +49,9 @@ It runs entirely in the browser and needs no server or database. Your data stays
 - **🎙️ Voice or text**: dictate anywhere (quick log, editor, task board) or type during the call.
 - **🧠 Auto-classification** into 18 areas: AD, Password Reset, MFA & Sessions, Entra ID, 3rd-party SSO, Shibboleth IdP, SSL/TLS, DMARC/SPF/DKIM, Mail Flow, M365, Firewall & Policy, Security Investigation, Network Config, Connectivity, Domain Controllers, Member Servers, Service Health & Uptime, and Other.
 - **🗂️ Entries, tasks and jobs** on a drag-and-drop board (Open → In progress → Blocked → Done).
+- **📚 Task Library**: the 52 operational tasks from the IT & Network Operations dashboard (AD, M365, SSL, Demarc, DNS, FortiGate, Cloudflare, TRC, Masader, KOHA, Eduroam, Veeam, class prep, patching), with cadence, priority, campus (HQ, COE, SOFS, COM, Rustaq) and the AD PowerShell export scripts.
+- **📦 Packages & routines**: bundle library tasks into packages. Routines assign them to you automatically on the days they're due, and the dashboard's **Today's routine** checklist tracks progress.
+- **🧭 Pick-from-menu with Ava**: tap ⌨️ during a call and choose from the library, today's due tasks, packages or open checks. No typing needed.
 - **📊 Dashboard**: today's timeline, KPIs, streak, check-in answer rate, weekly chart, area donut and a 12-month activity heatmap.
 - **📑 Reports** for Day / Week / Month / Quarter / Year, with a written narrative, charts, time-by-area breakdown, high-impact work, and export to **Markdown, CSV, Print/PDF** or a copied summary.
 - **🙈 Showcase mode** masks e-mails and IP addresses.
@@ -67,6 +70,29 @@ It runs entirely in the browser and needs no server or database. Your data stays
 | "Open tasks" | Reads your top open tasks |
 | "Mark the certificate task done" | Finds the matching open task and closes it |
 | "Nothing new" / "That's all" / "Bye" | Ends the call |
+
+### Task Library, packages and routines
+
+**Purpose:** Your recurring operational checks shouldn't depend on memory. The library holds every repeatable task, and routines put the right ones on your list each working day.
+
+**Scenario:** It's Tuesday the 15th. When you open OpsLog, the *Daily operational checks* routine assigns the 24 daily tickets. *Weekly checks* adds AD-06, SSL-01 and BKP-04 (Tuesdays), and *Monthly checks* adds AD-08, SSL-02, DNS-02 and CF-02 (15th–21st window). You tick them off on the dashboard, or tell Ava *"FGT-07 and BKP-01 done"* on your 10:30 call.
+
+| You want to… | Do this |
+|---|---|
+| Pick a task and work on it | **Task Library** → choose an area on the left → **Assign** (open ticket) or ✓ (log as done) |
+| Grab several at once | Tick the checkboxes → **Assign to me** / **Log as done** in the bar at the bottom |
+| Build a routine | Tick tasks → **Add to package… → New package**, or **Packages & routines → New package**. Choose *Routine* (each task's own schedule), *On selected days*, or *Manual* |
+| Run a sweep on demand | **Packages & routines → Run now** (e.g. *IPSec tunnel sweep — all campuses*), or say *"run tunnel sweep"* on a call |
+| Use a PowerShell export | Click **</>** on AD-02, AD-04, AD-06 or AD-09 to copy the script |
+| Add your own recurring task | **New template** (cadence, weekday or monthly window, priority, campus, optional script) |
+| Work from the call | Tap **⌨️ Type** → the menu shows *Task library, Due today, Packages, Today's checks, My open tasks* |
+
+How the schedule works (same rules as the old dashboard):
+- **Daily** tasks are due every working day.
+- **Weekly** tasks are due on their weekday.
+- **Monthly** tasks are due inside their window (1st–7th, 8th–14th, 15th–21st, 22nd–end), and stay on your list until done or the window ends.
+
+Each period gets its own ticket. If a check from an earlier period is still open when the next one is assigned, the old one is marked **Skipped**, so your board doesn't pile up. Open routine tickets don't count as logged work in reports. Only completed ones do.
 
 ---
 

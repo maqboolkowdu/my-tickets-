@@ -148,6 +148,7 @@
   }
 
   function hide() {
+    WL.LibraryUI && WL.LibraryUI.hidePicker();
     el('call').classList.add('hidden');
     document.body.classList.remove('in-call');
     S.phase = 'idle';
@@ -218,6 +219,7 @@
     }, 1000);
     setStatus('Connected');
     el('callForm').classList.toggle('show', !Voice.supported.stt || !S.micOn);
+    if (!Voice.supported.stt || !S.micOn) setTimeout(() => WL.LibraryUI && WL.LibraryUI.showPicker('home'), 50); else WL.LibraryUI && WL.LibraryUI.hidePicker();
     conversation(mode).catch((e) => { console.error(e); endCall(); });
   }
 
@@ -276,6 +278,27 @@
     });
   }
 
+  /** Switch the call to typing: mic off, text box and Ava's pick-from-menu panel open. */
+  function showTyping() {
+    if (S.phase !== 'active') return;
+    S.micOn = false;
+    Voice.stopListening();
+    setListeningUI(false);
+    el('callForm').classList.add('show');
+    WL.LibraryUI && WL.LibraryUI.showPicker('home');
+    setStatus('Type or pick from the menu');
+    setTimeout(() => el('callText').focus(), 30);
+  }
+
+  /** A choice made in the pick-from-menu panel counts as the user's turn. */
+  function pickerAction(userText, reply, cards = []) {
+    if (S.phase !== 'active') return;
+    S.savedThisCall.push(...cards);
+    const turn = { action: true, userText, reply, cards };
+    if (S.pending) S.pending(turn);
+    else { bubble('user', userText); renderSavedCards(cards); say(reply); }
+  }
+
   function submitTyped(text) {
     if (!text.trim()) return;
     Voice.stopListening();
@@ -310,7 +333,8 @@
     }
     if (mode === 'manual') return `${hi}, ${S.agentName()} here. What would you like to log?`;
     if (mode === 'retry') return `${hi}, it's ${S.agentName()} again — I missed you earlier. What have you been working on?`;
-    return `${hi}, it's ${S.agentName()}. Time for your check-in. What have you worked on${since ? ' since ' + since : ' so far'}?`;
+    const left = WL.Library ? WL.Library.todays().filter((e) => e.status !== 'done').length : 0;
+    return `${hi}, it's ${S.agentName()}. Time for your check-in. What have you worked on${since ? ' since ' + since : ' so far'}?${left ? ` You still have ${left} routine check${left > 1 ? 's' : ''} open today; tap the keyboard to tick them off.` : ''}`;
   }
   S.agentName = () => Store.settings.agentName || 'Ava';
 
@@ -351,17 +375,53 @@
       return { end: true, reply: 'No problem. Keep at it.' };
     }
     if (/^(help|what can you do|options)\b/.test(t)) {
-      return { reply: 'Just tell me what you did, like "reset MFA for a student and revoked sessions, took 10 minutes". You can also say "what did I do today", "summary this week", "open tasks", or "mark the certificate task done". Say "that\'s all" to hang up.' };
+      return { reply: 'Just tell me what you did, like "reset MFA for a student and revoked sessions, took 10 minutes". You can also say "what did I do today", "open tasks", "library", "run daily checks", a ticket ID like "FGT-07 done", or tap the keyboard to pick from a menu. Say "that\'s all" to hang up.' };
+    }
+    // Task library: ticket IDs, packages, menu
+    const Lib = WL.Library;
+    const ids = Lib ? Lib.idsIn(text) : [];
+    if (ids.length) {
+      const done = /\b(done|completed|complete|finished|resolved|checked|ok|all good|green)\b/.test(t);
+      const res = Lib.assign(ids, { status: done ? 'done' : 'open', source: 'call' });
+      const changed = [...res.created, ...res.updated];
+      S.savedThisCall.push(...changed);
+      renderSavedCards(res.created);
+      const same = res.existing.map((x) => x.ticket);
+      const sameTxt = same.length ? `${same.join(', ')} ${same.length > 1 ? 'were' : 'was'} already ${done ? 'done' : 'on your list'}.` : '';
+      if (!changed.length) return { reply: `${sameTxt} Anything else?` };
+      return { reply: `${done ? 'Marked' : 'Created'} ${changed.map((x) => x.ticket).join(', ')}${done ? ' as done' : ''}. ${sameTxt} Anything else?`.replace('  ', ' ') };
+    }
+    if (Lib && /^(run|start|assign|kick off)\b/.test(t) && Lib.findPackage(t)) {
+      const p = Lib.findPackage(t);
+      const res = Lib.runPackage(p, { source: 'call' });
+      S.savedThisCall.push(...res.created);
+      return { reply: res.created.length ? `Running “${p.name}”: ${res.created.length} ticket${res.created.length > 1 ? 's' : ''} added to your list. Anything else?` : `Everything in “${p.name}” is already on your list. Anything else?` };
+    }
+    if (Lib && /\b(library|templates?|pick (a )?task|menu)\b/.test(t)) {
+      WL.LibraryUI.showPicker('areas');
+      return { reply: 'Here’s your task library. Pick an area, tick the tasks, then create the tickets.' };
+    }
+    if (Lib && /\b(packages?|routines?)\b/.test(t)) {
+      WL.LibraryUI.showPicker('packages');
+      return { reply: 'Here are your packages. Tap Run on the one you want.' };
+    }
+    if (Lib && /\b(due today|what'?s due|today'?s (checks|tasks|routine))\b/.test(t)) {
+      const left = Lib.todays().filter((e) => e.status !== 'done');
+      WL.LibraryUI.showPicker(left.length ? 'checks' : 'due');
+      return { reply: left.length ? `You have ${left.length} routine check${left.length > 1 ? 's' : ''} open today. Tap one to mark it done, or say its ID, like “AD-01 done”.` : 'Your routine checks are all done. Here’s anything else due today.' };
     }
     if (/\b(what did i do|summary|summarise|summarize|recap|how many|how much|report)\b/.test(t) && !/\b(fixed|reset|created|configured)\b/.test(t)) {
       const p = periodWord(t);
       return { reply: summarySpeech(p.kind, p.anchor, p.word) + ' Anything else?' };
     }
     if (/\b(open|pending|outstanding|my) (tasks|jobs|items)\b|\bwhat'?s (pending|open|left)\b/.test(t)) {
-      const open = Store.openTasks().sort((a, b) => (a.due || '9') .localeCompare(b.due || '9'));
-      if (!open.length) return { reply: 'You have no open tasks. Nice. Anything else?' };
+      const all = Store.openTasks();
+      const open = all.filter((x) => !x.templateId).sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
+      const routine = all.length - open.length;
+      const extra = routine ? ` Plus ${routine} routine check${routine > 1 ? 's' : ''}.` : '';
+      if (!open.length) return { reply: `You have no open tasks of your own.${extra} Anything else?` };
       const list = open.slice(0, 3).map((x) => x.title).join('; ');
-      return { reply: `You have ${open.length} open task${open.length > 1 ? 's' : ''}. ${open.length > 3 ? 'The top three are' : 'They are'}: ${list}. Anything else?` };
+      return { reply: `You have ${open.length} open task${open.length > 1 ? 's' : ''}. ${open.length > 3 ? 'The top three are' : 'They are'}: ${list}.${extra} Anything else?` };
     }
     if (/^(mark|set|close|complete)\b.*\b(done|complete|completed|finished|closed)?\b/.test(t) && /\b(done|complete|completed|finished|close|closed)\b/.test(t)) {
       const task = findTask(t);
@@ -406,7 +466,16 @@
     while (S.phase === 'active') {
       const text = await userTurn();
       if (S.phase !== 'active' || text === null) break;
+      if (typeof text === 'object') {
+        misses = 0;
+        bubble('user', text.userText);
+        renderSavedCards(text.cards || []);
+        await say(text.reply);
+        continue;
+      }
       if (!text) {
+        const picker = document.getElementById('callPicker');
+        if (picker && !picker.hidden) continue;
         misses++;
         if (misses >= 2) { await say(`I'll let you get back to it. You can tap the phone button anytime to log something.`); break; }
         await say("Sorry, I didn't catch that. Go ahead — or type it below.");
@@ -457,7 +526,11 @@
     el('btnSnooze').addEventListener('click', () => snooze(10));
     el('btnEnd').addEventListener('click', () => endCall());
     el('btnMic').addEventListener('click', toggleMic);
-    el('btnKeyboard').addEventListener('click', () => { el('callForm').classList.toggle('show'); el('callText').focus(); });
+    el('btnKeyboard').addEventListener('click', () => {
+      const picker = document.getElementById('callPicker');
+      if (el('callForm').classList.contains('show') && picker && !picker.hidden) { WL.LibraryUI.hidePicker(); return; }
+      showTyping();
+    });
     el('callForm').addEventListener('submit', (ev) => { ev.preventDefault(); const v = el('callText').value; el('callText').value = ''; submitTyped(v); });
     el('callConvo').addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-edit]');
@@ -497,5 +570,5 @@
     setTimeout(tick, 2000);
   }
 
-  WL.Agent = { init, slotsFor, nextSlot, isWorkingNow, ring, startManual, endCall, state: S, test: () => ring({ mode: 'scheduled', slotMin: null }) };
+  WL.Agent = { init, slotsFor, nextSlot, isWorkingNow, ring, startManual, endCall, pickerAction, showTyping, state: S, test: () => ring({ mode: 'scheduled', slotMin: null }) };
 })(window.WL);

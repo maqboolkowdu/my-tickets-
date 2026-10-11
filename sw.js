@@ -1,11 +1,11 @@
 /* OpsLog service worker — offline cache + notification actions. */
-const CACHE = 'opslog-v1';
+const CACHE = 'opslog-v2';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
   './assets/css/app.css',
   './assets/js/util.js', './assets/js/categories.js', './assets/js/store.js', './assets/js/parser.js',
   './assets/js/voice.js', './assets/js/reports.js', './assets/js/charts.js', './assets/js/agent.js',
-  './assets/js/demo.js', './assets/js/app.js',
+  './assets/js/library.js', './assets/js/library-ui.js', './assets/js/demo.js', './assets/js/app.js',
   './assets/icons/icon.svg', './assets/icons/icon-192.png', './assets/icons/icon-512.png',
 ];
 
