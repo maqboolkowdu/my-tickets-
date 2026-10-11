@@ -57,7 +57,7 @@ It runs entirely in the browser and needs no server or database. Your data stays
 - **🙈 Showcase mode** masks e-mails and IP addresses.
 - **💾 Backup / restore** to and from JSON. **Sample data** is included so you can demo the dashboards straight away.
 - **📱 Installable PWA** that works offline and adapts to desktop, tablet and phone in light or dark theme.
-- **🪟 Windows helper script** so the check-in still rings when the browser is closed (see section 7).
+- **🪟 Windows helper script** so the check-in still rings when the browser is closed (see section 8).
 
 ### Things you can say during a call
 
@@ -99,9 +99,8 @@ Each period gets its own ticket. If a check from an earlier period is still open
 ## 5. How to use it (step by step)
 
 ### Step 1: Open the app
-- **Hosted:** publish it with GitHub Pages (see section 6) and open `https://<your-user>.github.io/my-tickets-/`.
-- **Local test:** from the repo folder run `python -m http.server 8080` and open <http://localhost:8080>.
-  (Opening `index.html` by double-clicking works too, but notifications and offline mode need `http(s)://`.)
+- **On your PC:** double-click `Start-OpsLog.cmd` and use <http://localhost:8080> (see section 6).
+- **Hosted:** publish it with GitHub Pages (see section 7) and open `https://<your-user>.github.io/my-tickets-/`.
 
 ### Step 2: Install it (recommended)
 In **Edge or Chrome**, click the *Install app* icon in the address bar. OpsLog then runs in its own window, which is what the Windows helper looks for.
@@ -134,7 +133,68 @@ Open **Reports**, pick *Day / Week / Month / Quarter / Year*, and use ◀ ▶ to
 
 ---
 
-## 6. Publish with GitHub Pages
+## 6. Run it on your own PC (no GitHub needed)
+
+**Purpose:** Keep OpsLog entirely on your workstation. Nothing is hosted, and it keeps working without internet.
+
+**Scenario:** Your campus policy prefers internal tools to stay off public hosting, or you just want OpsLog running from a folder on your laptop like any other admin tool.
+
+OpsLog is a static web app. `tools/Start-OpsLog.ps1` serves it with a tiny built-in web server (.NET `HttpListener`) bound to **localhost only**, so nothing on the network can reach it. You don't need Python, Node or IIS.
+
+> Why not just double-click `index.html`? Browsers treat `http://localhost` as a secure address, so voice input (microphone), notifications, offline mode and **Install app** all work there. From a `file://` path they don't, or they keep asking for permission.
+
+### Step 1: Get the files
+- **Download:** on GitHub click **Code → Download ZIP**, then extract it to a permanent folder, e.g. `C:\Tools\OpsLog`.
+- **or clone:** `git clone https://github.com/maqboolkowdu/my-tickets-.git C:\Tools\OpsLog`
+
+Files downloaded from the internet are blocked by Windows. Unblock them once:
+
+```powershell
+Get-ChildItem C:\Tools\OpsLog -Recurse | Unblock-File
+```
+
+### Step 2: Start it
+Double-click **`Start-OpsLog.cmd`** in the folder, or run:
+
+```powershell
+cd C:\Tools\OpsLog
+.\tools\Start-OpsLog.ps1            # serves http://localhost:8080 and opens Edge
+```
+
+Keep the window open while you use OpsLog. Press **Ctrl+C** to stop it. In Edge, click **Install app** in the address bar to get OpsLog in its own window.
+
+### Step 3 (recommended): Start it automatically at sign-in
+
+```powershell
+.\tools\Start-OpsLog.ps1 -InstallAtLogon     # hidden server at every sign-in
+.\tools\Start-OpsLog.ps1 -Uninstall          # remove it again
+```
+
+### Step 4: Point the check-in calls at your local copy
+
+```powershell
+.\tools\Register-OpsLogCheckins.ps1 -AppUrl "http://localhost:8080/" -Browser Edge -SkipWhenLocked
+```
+
+### Moving your data
+The browser stores entries **per address**, so `https://…github.io/my-tickets-/` and `http://localhost:8080/` each have their own data.
+1. On the old address: **Settings → Export backup (JSON)**.
+2. On `http://localhost:8080`: **Settings → Import backup → OK (replace)**.
+
+Always use the **same port** (8080 by default). If something else already uses it, start with `-Port 8090` and import your backup there.
+
+| Option | Command |
+|---|---|
+| Different port | `.\tools\Start-OpsLog.ps1 -Port 8090` |
+| Chrome instead of Edge | `.\tools\Start-OpsLog.ps1 -Browser Chrome` |
+| Server only, no browser | `.\tools\Start-OpsLog.ps1 -NoBrowser` |
+| See each request | `.\tools\Start-OpsLog.ps1 -Verbose` |
+
+> Prefer Python? `python -m http.server 8080` from the OpsLog folder does the same job.
+
+---
+
+## 7. Publish with GitHub Pages
 
 The repo includes `.github/workflows/pages.yml`, which deploys the site on every push to `main`.
 
@@ -149,7 +209,7 @@ The repo includes `.github/workflows/pages.yml`, which deploys the site on every
 
 ---
 
-## 7. Make it ring even when the browser is closed (Windows + PowerShell)
+## 8. Make it ring even when the browser is closed (Windows + PowerShell)
 
 Browsers can only ring while the page is open. For a guaranteed "phone call" on your workstation, register the scheduled tasks once:
 
@@ -181,7 +241,7 @@ The tasks appear in **Task Scheduler → Task Scheduler Library → OpsLog**. To
 
 ---
 
-## 8. How it works (for the curious)
+## 9. How it works (for the curious)
 
 ```
 index.html                 App shell, call screen, editor dialog
@@ -197,11 +257,13 @@ assets/js/charts.js        Dependency-free SVG charts (donut, bars, heatmap)
 assets/js/app.js           Views: Dashboard, Work Log, Tasks, Reports, Settings
 sw.js                      Offline cache + notification "Answer / Snooze" buttons
 tools/Register-OpsLogCheckins.ps1   Windows scheduled-task "phone call" helper
+tools/Start-OpsLog.ps1     Local web server for running OpsLog on your PC (localhost only)
+Start-OpsLog.cmd           Double-click launcher for the above
 ```
 
 **Browser support:** voice input (speech recognition) works in **Chrome, Edge and Safari**. In Firefox you can still answer calls by typing. Everything else works in any modern browser.
 
-## 9. Ideas for later
+## 10. Ideas for later
 
 - Real phone calls or SMS via Twilio / Teams (needs a small serverless backend).
 - Sync across devices (OneDrive / SharePoint list / Microsoft Graph).
