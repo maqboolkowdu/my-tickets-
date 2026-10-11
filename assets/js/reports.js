@@ -66,7 +66,8 @@
   const entryTime = (e) => new Date(e.status === 'done' && e.completedAt && e.type !== 'entry' ? e.completedAt : e.when);
 
   function aggregate(r) {
-    const items = Store.inRange(r.start, r.end).sort((a, b) => entryTime(a) - entryTime(b));
+    // Assigned-but-unfinished library/routine tickets are a to-do list, not logged work.
+    const items = Store.inRange(r.start, r.end).filter((e) => e.status !== 'skipped' && !(e.templateId && e.status !== 'done')).sort((a, b) => entryTime(a) - entryTime(b));
     const byCat = {};
     const minutesByCat = {};
     let minutes = 0, done = 0, critical = 0;
@@ -136,7 +137,7 @@
   }
 
   function toCSV(items) {
-    const cols = ['when', 'title', 'category', 'type', 'status', 'priority', 'minutes', 'ticket', 'tags', 'due', 'completedAt', 'source', 'details'];
+    const cols = ['when', 'title', 'category', 'type', 'status', 'priority', 'minutes', 'ticket', 'location', 'tags', 'due', 'completedAt', 'source', 'details'];
     const rows = [cols.join(',')];
     items.forEach((e) => rows.push(cols.map((c) => {
       let v = e[c];

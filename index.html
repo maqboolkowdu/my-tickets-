@@ -77,6 +77,7 @@
             <select id="fPriority"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="critical">Critical</option></select></label>
           <label class="field"><span>Time spent (min)</span><input id="fMinutes" type="number" min="0" step="5" inputmode="numeric" /></label>
           <label class="field"><span>Ticket / ref</span><input id="fTicket" placeholder="INC0012345" /></label>
+          <label class="field"><span>Campus</span><select id="fLocation"></select></label>
           <label class="field"><span>When</span><input id="fWhen" type="datetime-local" /></label>
           <label class="field"><span>Due (tasks)</span><input id="fDue" type="date" /></label>
           <label class="field"><span>Tags</span><input id="fTags" placeholder="vip, outage" /></label>
@@ -99,6 +100,65 @@
     </div>
   </dialog>
 
+  <!-- Task library: PowerShell script -->
+  <dialog id="scriptDlg" class="modal">
+    <div class="modal-card wide">
+      <header class="modal-head"><h2 id="scriptTitle">Script</h2><button type="button" class="icon-btn" data-close aria-label="Close"></button></header>
+      <div class="modal-body" id="scriptBody"></div>
+    </div>
+  </dialog>
+
+  <!-- Task library: custom template -->
+  <dialog id="tplDlg" class="modal">
+    <form id="tplForm" class="modal-card">
+      <header class="modal-head"><h2 id="tplTitle">New template</h2><button type="button" class="icon-btn" data-close aria-label="Close"></button></header>
+      <div class="modal-body">
+        <label class="field full"><span>Task</span><input id="tText" required maxlength="200" placeholder="e.g. Check the Teams Room in the boardroom before the weekly meeting" /></label>
+        <div class="grid-3">
+          <label class="field"><span>Area</span><select id="tArea"></select></label>
+          <label class="field"><span>Cadence</span><select id="tCad"><option value="d">Daily</option><option value="w">Weekly</option><option value="m">Monthly</option><option value="x">On demand</option></select></label>
+          <label class="field" id="tDayWrap"><span>Weekday</span><select id="tDay"></select></label>
+          <label class="field" id="tWinWrap"><span>Monthly window</span><select id="tWin"></select></label>
+          <label class="field"><span>Priority</span><select id="tPri"><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></label>
+          <label class="field"><span>Campus</span><select id="tLoc"></select></label>
+        </div>
+        <label class="field full"><span>PowerShell script <small class="muted">(optional, shown with a copy button)</small></span><textarea id="tScript" rows="5" class="mono" placeholder="Import-Module ActiveDirectory"></textarea></label>
+      </div>
+      <footer class="modal-foot">
+        <button type="button" class="btn btn-danger-ghost" id="tDelete">Delete</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save template</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Package builder -->
+  <dialog id="pkgDlg" class="modal">
+    <form id="pkgForm" class="modal-card wide">
+      <header class="modal-head"><h2 id="pkgTitle">New package</h2><button type="button" class="icon-btn" data-close aria-label="Close"></button></header>
+      <div class="modal-body">
+        <label class="field full"><span>Package name</span><input id="pName" maxlength="80" placeholder="e.g. Sunday morning sweep" /></label>
+        <fieldset class="field full modes">
+          <legend>When should it be assigned?</legend>
+          <label><input type="radio" name="pMode" value="cadence" /> <span><b>Routine</b> — follow each task’s own schedule (daily / weekday / monthly window)</span></label>
+          <label><input type="radio" name="pMode" value="days" /> <span><b>On selected days</b> — assign every task in the package</span></label>
+          <label><input type="radio" name="pMode" value="manual" /> <span><b>Manual</b> — only when I run it (or ask Ava)</span></label>
+        </fieldset>
+        <div class="days" id="pDays"></div>
+        <label class="field check" id="pAutoWrap"><input type="checkbox" id="pAuto" /><span>Assign automatically on working days</span></label>
+        <div class="pp-head"><label class="search sm"><input id="pQ" placeholder="Filter tasks" aria-label="Filter tasks" /></label><span class="muted small" id="pCount"></span></div>
+        <div class="pp-list" id="pList"></div>
+      </div>
+      <footer class="modal-foot">
+        <button type="button" class="btn btn-danger-ghost" id="pDelete">Delete</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-ghost" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save package</button>
+      </footer>
+    </form>
+  </dialog>
+
   <!-- Incoming / active call -->
   <div id="call" class="call hidden" role="dialog" aria-modal="true" aria-labelledby="callTitle" data-phase="ringing">
     <div class="call-bg"></div>
@@ -114,6 +174,7 @@
       </div>
       <div class="call-convo" id="callConvo" aria-live="polite"></div>
       <div class="call-live" id="callLive"></div>
+      <div class="call-picker" id="callPicker" hidden></div>
       <form class="call-form" id="callForm" autocomplete="off">
         <input id="callText" placeholder="Type your update and press Enter…" aria-label="Type your update" />
         <button class="icon-btn" type="submit" aria-label="Send" id="callSend"></button>
@@ -141,7 +202,9 @@
   <script src="assets/js/reports.js"></script>
   <script src="assets/js/charts.js"></script>
   <script src="assets/js/agent.js"></script>
+  <script src="assets/js/library.js"></script>
   <script src="assets/js/demo.js"></script>
+  <script src="assets/js/library-ui.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>

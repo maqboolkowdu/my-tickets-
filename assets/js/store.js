@@ -31,6 +31,7 @@
     lang: 'en-US',
     autoListen: true,
     notifications: true,
+    routinesEnabled: true,
   };
 
   const read = (k, fallback) => {
@@ -57,7 +58,7 @@
       const now = new Date().toISOString();
       const e = Object.assign({
         id: U.uid(), when: now, created: now, updated: now, title: '', details: '', category: 'other',
-        type: 'entry', status: 'done', priority: 'normal', minutes: null, ticket: '', tags: [], due: null, source: 'manual',
+        type: 'entry', status: 'done', priority: 'normal', minutes: null, ticket: '', location: '', tags: [], due: null, source: 'manual',
       }, data);
       if (e.status === 'done' && !e.completedAt) e.completedAt = e.type === 'entry' ? e.when : now;
       return e;
@@ -74,6 +75,7 @@
       Object.assign(e, patch, { updated: new Date().toISOString() });
       if (e.status === 'done' && !wasDone) e.completedAt = new Date().toISOString();
       if (e.status !== 'done') e.completedAt = null;
+      if (patch.status === 'done' && e.type === 'entry') e.completedAt = e.when;
       this.persist();
       return e;
     },
@@ -91,7 +93,7 @@
       });
     },
 
-    openTasks() { return this.entries.filter((e) => e.type !== 'entry' && e.status !== 'done'); },
+    openTasks() { return this.entries.filter((e) => e.type !== 'entry' && e.status !== 'done' && e.status !== 'skipped'); },
 
     saveSettings(patch) {
       Object.assign(this.settings, patch);

@@ -44,6 +44,11 @@
     return m ? m[1].toUpperCase() : '';
   }
 
+  function parseLocation(t) {
+    const m = t.match(/\b(HQ|COE|SOFS|COM)\b/) || t.match(/\b(rustaq)\b/i);
+    return m ? (m[1].toLowerCase() === 'rustaq' ? 'Rustaq' : m[1]) : '';
+  }
+
   function parseTags(t) {
     const tags = new Set();
     (t.match(/#[a-z][\w-]{1,30}/gi) || []).forEach((x) => tags.add(x.slice(1).toLowerCase()));
@@ -116,6 +121,7 @@
       priority: parsePriority(clean),
       minutes: parseDuration(clean),
       ticket: parseTicket(clean),
+      location: parseLocation(clean),
       tags: parseTags(clean),
       due: type !== 'entry' && status !== 'done' ? parseDue(clean) : null,
       when: when.toISOString(),
