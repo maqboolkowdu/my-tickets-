@@ -50,7 +50,7 @@ It runs entirely in the browser and needs no server or database. Your data stays
 - **🧠 Auto-classification** into 18 areas: AD, Password Reset, MFA & Sessions, Entra ID, 3rd-party SSO, Shibboleth IdP, SSL/TLS, DMARC/SPF/DKIM, Mail Flow, M365, Firewall & Policy, Security Investigation, Network Config, Connectivity, Domain Controllers, Member Servers, Service Health & Uptime, and Other.
 - **🗂️ Entries, tasks and jobs** on a drag-and-drop board (Open → In progress → Blocked → Done).
 - **📚 Task Library**: the 52 operational tasks from the IT & Network Operations dashboard (AD, M365, SSL, Demarc, DNS, FortiGate, Cloudflare, TRC, Masader, KOHA, Eduroam, Veeam, class prep, patching), with cadence, priority, campus (HQ, COE, SOFS, COM, Rustaq) and the AD PowerShell export scripts.
-- **📦 Packages & routines**: bundle library tasks into packages. Routines assign them to you automatically on the days they're due, and the dashboard's **Today's routine** checklist tracks progress.
+- **📦 Packages & routines**: bundle library tasks into packages. Routines assign them to you automatically on the days they're due, and the **Today's Routine** page in the left menu tracks them by priority (Critical → Low), with a count badge of open checks.
 - **🧭 Pick-from-menu with Ava**: tap ⌨️ during a call and choose from the library, today's due tasks, packages or open checks. No typing needed.
 - **📊 Dashboard**: today's timeline, KPIs, streak, check-in answer rate, weekly chart, area donut and a 12-month activity heatmap.
 - **📑 Reports** for Day / Week / Month / Quarter / Year, with a written narrative, charts, time-by-area breakdown, high-impact work, and export to **Markdown, CSV, Print/PDF** or a copied summary.
@@ -75,7 +75,7 @@ It runs entirely in the browser and needs no server or database. Your data stays
 
 **Purpose:** Your recurring operational checks shouldn't depend on memory. The library holds every repeatable task, and routines put the right ones on your list each working day.
 
-**Scenario:** It's Tuesday the 15th. When you open OpsLog, the *Daily operational checks* routine assigns the 24 daily tickets. *Weekly checks* adds AD-06, SSL-01 and BKP-04 (Tuesdays), and *Monthly checks* adds AD-08, SSL-02, DNS-02 and CF-02 (15th–21st window). You tick them off on the dashboard, or tell Ava *"FGT-07 and BKP-01 done"* on your 10:30 call.
+**Scenario:** It's Tuesday the 15th. When you open OpsLog, the *Daily operational checks* routine assigns the 24 daily tickets. *Weekly checks* adds AD-06, SSL-01 and BKP-04 (Tuesdays), and *Monthly checks* adds AD-08, SSL-02, DNS-02 and CF-02 (15th–21st window). You tick them off on the **Today's Routine** page, or tell Ava *"FGT-07 and BKP-01 done"* on your 10:30 call.
 
 | You want to… | Do this |
 |---|---|

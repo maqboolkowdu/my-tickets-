@@ -5,8 +5,9 @@
   const $ = U.$, $$ = U.$$;
 
   const ROUTES = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { id: 'log', label: 'Work Log', icon: 'log' },
+    { id: 'dashboard', label: 'Dashboard', short: 'Home', icon: 'dashboard' },
+    { id: 'routine', label: "Today's Routine", short: 'Today', icon: 'check', badge: true },
+    { id: 'log', label: 'Work Log', short: 'Log', icon: 'log' },
     { id: 'tasks', label: 'Tasks & Jobs', short: 'Tasks', icon: 'tasks' },
     { id: 'library', label: 'Task Library', short: 'Library', icon: 'library' },
     { id: 'reports', label: 'Reports', icon: 'reports' },
@@ -14,7 +15,7 @@
   ];
   const STATUS = { open: 'Open', 'in-progress': 'In progress', blocked: 'Blocked', done: 'Done', skipped: 'Skipped' };
   const PR_ORDER = { critical: 0, high: 1, normal: 2, low: 3 };
-  const ui = { route: 'dashboard', report: { kind: 'week', anchor: new Date() }, log: { q: '', cat: '', type: '', status: '', period: 'month' }, focusLoc: '', tasksFilter: 'all' };
+  const ui = { route: 'dashboard', report: { kind: 'week', anchor: new Date() }, log: { q: '', cat: '', type: '', status: '', period: 'month' }, focusLoc: '', routineStatus: 'open', tasksFilter: 'all' };
 
   /* ---------------- helpers ---------------- */
   const chip = (id) => { const c = Categories.get(id); return `<span class="chip" style="--cat:${c.color}">${U.esc(c.name)}</span>`; };
@@ -74,7 +75,7 @@
 
   /* ---------------- shell ---------------- */
   function renderShell() {
-    const nav = (short) => ROUTES.map((r) => `<a href="#/${r.id}" data-route="${r.id}">${U.icon(r.icon)}<span>${short && r.short ? r.short : r.label}</span></a>`).join('');
+    const nav = (short) => ROUTES.map((r) => `<a href="#/${r.id}" data-route="${r.id}">${U.icon(r.icon)}<span>${short && r.short ? r.short : r.label}</span>${r.badge ? '<b class="nav-badge" hidden></b>' : ''}</a>`).join('');
     $('#nav').innerHTML = nav(false);
     $('#bottomNav').innerHTML = nav(true);
     $('#btnNew').innerHTML = `${U.icon('plus')}<span class="hide-xs">New entry</span>`;
@@ -98,7 +99,13 @@
     $('#btnShowcase').classList.toggle('active', !!Store.settings.showcase);
   }
 
+  function updateBadges() {
+    const left = Library.todays().filter((e) => e.status !== 'done').length;
+    $$('.nav-badge').forEach((b) => { b.textContent = left; b.hidden = !left; b.title = `${left} routine check${left === 1 ? '' : 's'} open today`; });
+  }
+
   function renderSideNext() {
+    updateBadges();
     const n = nextCallText();
     const working = Agent.isWorkingNow();
     $('#sideNext').innerHTML = `
@@ -125,7 +132,7 @@
     const r = ROUTES.find((x) => x.id === ui.route);
     $('#pageTitle').textContent = r.label;
     const v = $('#view');
-    const views = { dashboard: viewDashboard, log: viewLog, tasks: viewTasks, library: () => WL.LibraryUI.view(), reports: viewReports, settings: viewSettings };
+    const views = { dashboard: viewDashboard, routine: viewRoutine, log: viewLog, tasks: viewTasks, library: () => WL.LibraryUI.view(), reports: viewReports, settings: viewSettings };
     v.innerHTML = views[ui.route]();
     v.className = `view view-${ui.route}`;
     if (ui.route === 'library') WL.LibraryUI.after(); else afterRender[ui.route] && afterRender[ui.route]();
@@ -182,8 +189,6 @@
         <div class="kpi"><div class="kpi-ring">${Charts.ring(rate)}</div><div><div class="kpi-label">Check-ins answered</div><div class="kpi-sub">${week.calls.answered}/${week.calls.total} this week</div></div></div>
       </div>
 
-      ${focusCard()}
-
       <div class="grid-2">
         ${card(`Today's timeline`, day.items.length ? `<div class="timeline">${day.items.slice().reverse().map((e) => entryRow(e)).join('')}</div>` : empty('No entries yet today.', `<button class="btn btn-ghost" data-call>${U.icon('phone')} Log by voice</button>`), { actions: `<a class="link-btn" href="#/log">View log →</a>` })}
         ${card('Open tasks & jobs', open.length ? `<div class="task-list">${open.slice(0, 7).map(taskCard).join('')}</div>` : empty('No open tasks. Say “remind me to…” on a call to add one.'), { actions: `<a class="link-btn" href="#/tasks">Board →</a>` })}
@@ -198,30 +203,55 @@
       ${!Store.entries.some((e) => !e.templateId) ? `<div class="banner">${U.icon('spark')}<div><b>Want to see it in action?</b> Load a year of sample IT-ops data to explore the dashboards — you can remove it with one click later.</div><button class="btn btn-ghost" id="btnDemo">Load sample data</button></div>` : ''}
     `;
   }
-  /* Today's routine checks (library tickets due today), ordered like the old "Today's Focus". */
-  function focusCard() {
+  /* ---------------- Today's Routine (library tickets due today) ---------------- */
+  const PR_GROUPS = [['critical', 'Critical'], ['high', 'High'], ['normal', 'Medium'], ['low', 'Low']];
+  function viewRoutine() {
+    $('#pageSub').textContent = `${U.fmtDate(new Date())} · your daily, weekly and monthly checks`;
     const all = Library.todays();
     const pkgOn = Library.packages().some((p) => p.auto && p.mode !== 'manual') && Store.settings.routinesEnabled !== false;
     if (!all.length) {
-      return card("Today's routine", empty(pkgOn ? 'No routine checks are due today.' : 'Routines are off. Pick tasks from the library or turn on a routine.', `<a class="btn btn-ghost" href="#/library">${U.icon('library')} Open Task Library</a>`), { cls: 'focus-card' });
+      return card("Today's routine", empty(pkgOn ? 'No routine checks are due today.' : 'Routines are off. Pick tasks from the library or turn a routine on.',
+        `<div class="btn-row"><button class="btn btn-primary" id="rtAssign">${U.icon('package')} Assign what’s due</button><a class="btn btn-ghost" href="#/library">${U.icon('library')} Open Task Library</a></div>`));
     }
-    const locs = [...new Set(all.map((e) => e.location).filter(Boolean))];
-    const list = all.filter((e) => !ui.focusLoc || e.location === ui.focusLoc)
-      .sort((a, b) => (a.status === 'done') - (b.status === 'done') || PR_ORDER[a.priority] - PR_ORDER[b.priority] || a.ticket.localeCompare(b.ticket));
     const done = all.filter((e) => e.status === 'done').length;
     const pct = Math.round((done / all.length) * 100);
-    const label = pct === 100 ? 'Outstanding — everything resolved' : pct >= 75 ? 'Excellent day' : pct >= 50 ? 'Solid progress' : pct >= 25 ? 'Building momentum' : pct > 0 ? 'Warming up' : "Let's get started";
-    return card(`Today's routine <span class="muted small">${done}/${all.length} done · ${label}</span>`, `
-      <div class="progress"><span style="width:${pct}%"></span></div>
-      ${locs.length ? `<div class="chips" role="group" aria-label="Filter by campus"><button class="fchip ${!ui.focusLoc ? 'on' : ''}" data-focus-loc="">All campuses</button>${locs.map((l) => `<button class="fchip ${ui.focusLoc === l ? 'on' : ''}" data-focus-loc="${U.esc(l)}">${U.esc(l)}</button>`).join('')}</div>` : ''}
-      <div class="focus-list">${list.map((e) => `
+    const label = pct === 100 ? 'Outstanding — everything resolved' : pct >= 75 ? 'Excellent day' : pct >= 50 ? 'Solid progress' : pct >= 25 ? 'Building momentum' : pct > 0 ? 'Warming up' : "No checks resolved yet — let's get started";
+    const openOf = (p) => all.filter((e) => e.status !== 'done' && e.priority === p).length;
+    const locs = [...new Set(all.map((e) => e.location).filter(Boolean))];
+    const st = ui.routineStatus;
+    const shown = all.filter((e) => (!ui.focusLoc || e.location === ui.focusLoc) && (st === 'all' || (st === 'done' ? e.status === 'done' : e.status !== 'done')));
+    const row = (e) => `
         <div class="focus-row ${e.status === 'done' ? 'is-done' : ''}" style="--cat:${Categories.get(e.category).color}">
           <button class="tick" data-toggle-done="${e.id}" aria-pressed="${e.status === 'done'}" title="${e.status === 'done' ? 'Mark as open' : 'Mark done'}">${U.icon('check')}</button>
           <span class="badge mono">${U.esc(e.ticket)}</span>
           <span class="fr-title" data-edit="${e.id}" title="${U.safe(e.title)}">${U.safe(e.title)}</span>
-          <span class="fr-meta">${prBadge(e.priority)}${locBadge(e.location)}${e.status === 'in-progress' || e.status === 'blocked' ? stBadge(e.status) : ''}</span>
-        </div>`).join('')}</div>`,
-    { cls: 'focus-card', actions: `<a class="link-btn" href="#/library">Library & routines →</a>` });
+          <span class="fr-meta">${chip(e.category)}${locBadge(e.location)}<span class="badge cad-${(e.tags || [])[0] || ''}">${U.esc((e.tags || [])[0] || '')}</span>${e.status === 'in-progress' || e.status === 'blocked' ? stBadge(e.status) : ''}</span>
+        </div>`;
+    const groups = PR_GROUPS.map(([k, l]) => [k, l, shown.filter((e) => e.priority === k).sort((a, b) => a.ticket.localeCompare(b.ticket))]).filter(([, , list]) => list.length);
+    const openShown = shown.filter((e) => e.status !== 'done').length;
+    return `
+      <div class="routine-head card">
+        <div class="rh-progress">
+          <div class="rh-top"><b>${done} of ${all.length} done</b><span class="muted">${label}</span></div>
+          <div class="progress big"><span style="width:${pct}%"></span></div>
+        </div>
+        <div class="rh-stats">
+          ${PR_GROUPS.map(([k, l]) => `<div class="rh-stat pr-${k}"><b>${openOf(k)}</b><span>${l} open</span></div>`).join('')}
+        </div>
+      </div>
+      <div class="toolbar routine-bar">
+        <div class="seg" role="tablist">${[['open', 'Open'], ['done', 'Done'], ['all', 'All']].map(([v, l]) => `<button role="tab" class="${st === v ? 'on' : ''}" data-rt-status="${v}">${l}</button>`).join('')}</div>
+        ${locs.length ? `<div class="chips" role="group" aria-label="Filter by campus"><button class="fchip ${!ui.focusLoc ? 'on' : ''}" data-focus-loc="">All campuses</button>${locs.map((l) => `<button class="fchip ${ui.focusLoc === l ? 'on' : ''}" data-focus-loc="${U.esc(l)}">${U.esc(l)}</button>`).join('')}</div>` : ''}
+        <span class="spacer"></span>
+        ${openShown ? `<button class="btn btn-ghost sm" id="rtAllDone" data-n="${openShown}">${U.icon('check')} Mark ${openShown} shown as done</button>` : ''}
+        <button class="btn btn-ghost sm" id="rtAssign" title="Assign anything due today that isn't on the list yet">${U.icon('package')} Assign what’s due</button>
+        <a class="btn btn-ghost sm" href="#/library">${U.icon('library')} Library</a>
+      </div>
+      ${groups.length ? groups.map(([k, l, list]) => `
+        <section class="pr-group pr-${k}">
+          <h4><span class="pr-dot"></span>${l} <span class="muted">· ${list.length}</span></h4>
+          <div class="card focus-list single">${list.map(row).join('')}</div>
+        </section>`).join('') : card('', empty(st === 'open' ? 'Every check here is done. Outstanding.' : 'Nothing matches this filter.'))}`;
   }
 
   function kpi(label, val, sub, icon) {
@@ -429,6 +459,23 @@
 
   /* ---------------- after-render wiring ---------------- */
   const afterRender = {
+    routine() {
+      $$('[data-rt-status]').forEach((b) => b.addEventListener('click', () => { ui.routineStatus = b.dataset.rtStatus; render(); }));
+      $('#rtAssign').addEventListener('click', () => {
+        const before = Library.todays().length;
+        Library.packages().filter((p) => p.auto && p.mode !== 'manual').forEach((p) => Library.runPackage(p));
+        const n = Library.todays().length - before;
+        U.toast(n ? `Assigned ${n} more check${n > 1 ? 's' : ''}` : 'Everything due today is already on the list', n ? 'success' : 'info');
+        render();
+      });
+      const all = $('#rtAllDone');
+      if (all) all.addEventListener('click', () => {
+        if (!all.dataset.armed) { all.dataset.armed = '1'; all.classList.add('btn-confirm'); all.innerHTML = `${U.icon('check')} Confirm: mark ${all.dataset.n} done`; setTimeout(() => { if (all.isConnected) render(); }, 4000); return; }
+        const st = ui.routineStatus;
+        Library.todays().filter((e) => e.status !== 'done' && (!ui.focusLoc || e.location === ui.focusLoc) && st !== 'done').forEach((e) => Store.update(e.id, { status: 'done' }));
+        U.toast('Marked as done', 'success');
+      });
+    },
     dashboard() {
       const input = $('#quickText');
       const preview = U.debounce(() => {
