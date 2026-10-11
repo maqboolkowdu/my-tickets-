@@ -571,6 +571,36 @@ body:has(.sel-bar.show) .toasts { bottom: 96px; }
   .fr-meta { grid-column: 3; }
 }
 
+
+/* Today's Routine page */
+.nav a { position: relative; }
+.nav-badge { margin-left: auto; min-width: 22px; height: 20px; padding: 0 6px; border-radius: 99px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; display: inline-grid; place-items: center; font-variant-numeric: tabular-nums; }
+.bottom-nav .nav-badge { position: absolute; top: 2px; left: 50%; margin-left: 6px; min-width: 18px; height: 16px; font-size: 10px; padding: 0 4px; }
+.routine-head { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: center; padding: 18px 20px; }
+.rh-progress { flex: 1 1 320px; min-width: 0; }
+.rh-top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; font-size: 15px; }
+.progress.big { height: 12px; margin: 0; }
+.rh-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+.rh-stat { min-width: 86px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); display: grid; text-align: center; }
+.rh-stat b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.rh-stat span { font-size: 11.5px; color: var(--muted); }
+.pr-critical { --pr: #ef4444; } .pr-high { --pr: #f59e0b; } .pr-normal { --pr: #3b82f6; } .pr-low { --pr: #94a3b8; }
+.rh-stat b { color: var(--pr); }
+.routine-bar { align-items: center; }
+.btn-confirm { border-color: var(--warn) !important; color: var(--warn) !important; }
+.pr-group { display: flex; flex-direction: column; gap: 8px; }
+.pr-group h4 { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.pr-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--pr); }
+.focus-list.single { grid-template-columns: 1fr; max-height: none; overflow: visible; gap: 0; }
+.focus-list.single .focus-row { padding: 10px 16px; border-left: 3px solid var(--pr, transparent); }
+.focus-list.single .focus-row:last-child { border-bottom: 0; }
+.focus-list.single .fr-title { white-space: normal; }
+@media (max-width: 560px) {
+  .rh-stat { min-width: 0; flex: 1; padding: 8px; }
+  .focus-list.single .focus-row { padding: 10px 12px; }
+  .fr-meta { flex-wrap: wrap; }
+}
+
 /* ---------- print (Reports → Print / PDF) ---------- */
 @media print {
   :root { --bg: #fff; --surface: #fff; --surface-2: #f7f8fc; --border: #dde3ee; --text: #0f172a; --muted: #555; --shadow: none; }
