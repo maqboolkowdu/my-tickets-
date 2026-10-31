@@ -1,8 +1,11 @@
-name: Deploy OpsLog to GitHub Pages
+name: Deploy OpsLog & CyberDigest to GitHub Pages
 
 on:
   push:
     branches: [main]
+  schedule:
+    # Refresh CyberDigest news every 3 hours (UTC). Scheduled runs only fire on the default branch.
+    - cron: '17 */3 * * *'
   workflow_dispatch:
 
 permissions:
@@ -22,6 +25,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Refresh CyberDigest news feed
+        # A failed fetch keeps the committed feed.json, so the site still deploys.
+        run: python3 cyberdigest/tools/fetch_feeds.py || echo "::warning::Feed refresh failed; deploying the previous feed"
       - uses: actions/configure-pages@v5
         with:
           enablement: true

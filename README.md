@@ -4,6 +4,8 @@
 
 ![Platform](https://img.shields.io/badge/platform-any%20browser-4f6bff) ![Backend](https://img.shields.io/badge/backend-none-8b5cf6) ![Data](https://img.shields.io/badge/data-stays%20on%20your%20device-22c55e)
 
+> **Also in this repo:** [**CyberDigest**](cyberdigest/README.md) is a daily reader of bite-size cyber security news with a GCC focus. It's served at `/cyberdigest/` on the same GitHub Pages site.
+
 ---
 
 ## 1. Description
