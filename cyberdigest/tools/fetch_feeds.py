@@ -7,6 +7,9 @@ writes cyberdigest/data/feed.json for the web app.
 
 Standard library only, so it runs on any GitHub Actions runner or a laptop:
     python3 cyberdigest/tools/fetch_feeds.py
+
+If the `anthropic` package and an ANTHROPIC_API_KEY are available, new stories
+also get AI-written key ideas and a "why it matters" line (see ai_summaries.py).
 """
 import hashlib
 import html
@@ -19,6 +22,8 @@ import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
+
+import ai_summaries
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "data", "feed.json")
@@ -238,13 +243,25 @@ def main():
         batches = list(pool.map(lambda f: fetch(*f), FEEDS))
     fresh = [i for b in batches for i in b]
 
-    old = []
+    old, skipped = [], set()
     if os.path.exists(OUT):
         try:
             with open(OUT, encoding="utf-8") as f:
-                old = json.load(f).get("items", [])
+                prev = json.load(f)
+            old, skipped = prev.get("items", []), set(prev.get("ai_skipped", []))
         except (OSError, ValueError):
-            old = []
+            pass
+
+    # Carry AI results over to the fresh copy of a story so it's only summarised once.
+    old_by_id = {i["id"]: i for i in old}
+    for it in fresh:
+        prev_it = old_by_id.get(it["id"])
+        if prev_it and "ai" in prev_it:
+            for k in ("ai", "ideas", "takeaway", "gcc", "countries"):
+                if k in prev_it:
+                    it[k] = prev_it[k]
+    fetched_ids = {i["id"] for i in fresh}
+    fresh = [i for i in fresh if i["id"] not in skipped]  # already judged off-topic
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=KEEP_DAYS)
     seen_ids, seen_titles, merged = set(), set(), []
@@ -260,6 +277,11 @@ def main():
     merged.sort(key=lambda i: i["published"], reverse=True)
     merged = merged[:MAX_ITEMS]
 
+    before = {i["id"] for i in merged}
+    merged = ai_summaries.enrich(merged)
+    # Remember off-topic stories while they are still in the source feeds, so they aren't re-checked every run.
+    skipped = (skipped & fetched_ids) | (before - {i["id"] for i in merged})
+
     if not merged:
         print("No items fetched and no previous feed — leaving file untouched.", file=sys.stderr)
         return 1
@@ -269,9 +291,11 @@ def main():
             "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "sources": [{"name": n, "region": r} for n, _, r in FEEDS],
             "items": merged,
+            "ai_skipped": sorted(skipped),
         }, f, ensure_ascii=False, separators=(",", ":"))
     gcc = sum(1 for i in merged if i["gcc"])
-    print(f"Wrote {len(merged)} stories ({gcc} GCC) → {os.path.relpath(OUT)}", file=sys.stderr)
+    ai = sum(1 for i in merged if "ai" in i)
+    print(f"Wrote {len(merged)} stories ({gcc} GCC, {ai} with AI summaries) → {os.path.relpath(OUT)}", file=sys.stderr)
     return 0
 
 

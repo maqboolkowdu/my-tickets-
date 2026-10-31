@@ -39,6 +39,7 @@
   const flags = (item) => item.countries.map((c) => `<span title="${esc(COUNTRIES[c].name)}">${COUNTRIES[c].flag}</span>`).join('');
   const gccBadge = (item) => (item.gcc ? `<span class="badge gcc">${item.countries.length ? flags(item) : '🌍'} GCC</span>` : '');
   const topicChip = (item) => { const t = primaryTopic(item); return `<span class="chip-topic">${t.emoji} ${esc(t.label)}</span>`; };
+  const aiBadge = (item) => (item.ai && item.ai.ideas ? '<span class="badge ai" title="Key ideas written by Claude from the publisher\'s summary">✨ AI summary</span>' : '');
   const ideasOf = (item) => (item.ideas && item.ideas.length ? item.ideas : [item.summary && item.summary.length > 40 ? item.summary.slice(0, 420) : 'Headline brief. This source only publishes the headline, so open the full story for the details.']);
 
   function score(item) {
@@ -83,6 +84,7 @@
     const where = item.countries.length ? ` · ${item.countries.map((c) => COUNTRIES[c].name).join(', ')}` : '';
     let md = `### ${item.title}\n*${item.source} · ${date}${where}* · [Read the full story](${item.link})\n\n`;
     md += ideasOf(item).map((i) => `- ${i}`).join('\n') + '\n';
+    if (item.takeaway) md += `\n**Why it matters:** ${item.takeaway}\n`;
     if (note) md += `\n> **My take:** ${note}\n`;
     return md;
   }
@@ -183,10 +185,11 @@
     wrap.innerHTML = `
       <div class="stack-progress">${ids.map((id, i) => `<i class="${Store.isRead(id) ? 'read' : ''} ${i === viewer.story ? 'cur' : ''}"></i>`).join('')}</div>
       <article class="idea-card" id="card" style="--c1:${t.c1};--c2:${t.c2}" tabindex="0" aria-label="Story ${viewer.story + 1} of ${ids.length}">
-        <div class="card-top">${topicChip(item)} ${gccBadge(item)}<span class="spacer"></span><span class="muted-l">${readMins(item)} min</span></div>
+        <div class="card-top">${topicChip(item)} ${gccBadge(item)} ${aiBadge(item)}<span class="spacer"></span><span class="muted-l">${readMins(item)} min</span></div>
         <h2 class="card-title">${esc(item.title)}</h2>
         <div class="card-meta">${esc(item.source)} · ${ago(item.published)}</div>
         <p class="card-idea">${esc(ideas[viewer.idea])}</p>
+        ${item.takeaway && viewer.idea === ideas.length - 1 ? `<p class="takeaway"><b>Why it matters</b> ${esc(item.takeaway)}</p>` : ''}
         <div class="card-foot">
           ${ideas.length > 1 ? `<span class="dots">${ideas.map((_, i) => `<i class="${i === viewer.idea ? 'on' : ''}"></i>`).join('')}</span>` : '<span></span>'}
           <a href="${esc(item.link)}" target="_blank" rel="noopener" class="read-link">Full story ↗</a>
@@ -332,12 +335,13 @@
     const saved = Store.savedFor(id);
     $('#readerBody').innerHTML = `
       <header class="reader-head" style="--c1:${t.c1};--c2:${t.c2}">
-        <div class="card-top">${item.topics.map((k) => `<span class="chip-topic">${TOPICS[k].emoji} ${esc(TOPICS[k].label)}</span>`).join('')} ${gccBadge(item)}<span class="spacer"></span><button class="icon-btn light" data-close aria-label="Close">✕</button></div>
+        <div class="card-top">${item.topics.map((k) => `<span class="chip-topic">${TOPICS[k].emoji} ${esc(TOPICS[k].label)}</span>`).join('')} ${gccBadge(item)} ${aiBadge(item)}<span class="spacer"></span><button class="icon-btn light" data-close aria-label="Close">✕</button></div>
         <h2>${esc(item.title)}</h2>
         <div class="card-meta">${esc(item.source)} · ${new Date(item.published).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</div>
       </header>
       <div class="reader-ideas">
         ${ideasOf(item).map((txt, n) => `<div class="idea"><span class="idea-n">Idea ${n + 1}</span><p>${esc(txt)}</p></div>`).join('')}
+        ${item.takeaway ? `<div class="idea takeaway-box"><span class="idea-n">Why it matters</span><p>${esc(item.takeaway)}</p></div>` : ''}
         ${saved && saved.note ? `<div class="idea note"><span class="idea-n">Your note</span><p>${esc(saved.note)}</p></div>` : ''}
       </div>
       <footer class="row wrap">

@@ -1,5 +1,5 @@
 /* CyberDigest service worker — app shell offline, network-first so news stays fresh. */
-const CACHE = 'cyberdigest-v1';
+const CACHE = 'cyberdigest-v2';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest', './data/feed.json',
   './assets/css/app.css', './assets/js/data.js', './assets/js/store.js', './assets/js/app.js',

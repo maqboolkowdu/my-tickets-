@@ -17,6 +17,7 @@ It has two parts:
 | Part | What it does | Where it runs |
 |---|---|---|
 | **Feed builder** (`tools/fetch_feeds.py`) | Downloads 20 RSS feeds, removes duplicates, tags each story with **topics** (ransomware, vulnerabilities, OT, AI security, policy…) and **GCC countries**, splits summaries into ideas, and writes `data/feed.json`. | GitHub Actions, every 3 hours. Python standard library only. |
+| **AI summaries** (`tools/ai_summaries.py`, optional) | Sends each *new* story to Claude, which writes 2–3 key ideas, a **"Why it matters"** line for defenders, and a GCC relevance rating. It also drops stories that aren't really about cyber security. | Same GitHub Action, only when an `ANTHROPIC_API_KEY` secret is set. |
 | **Web app** (`index.html`) | The daily stack, Explore filters, stashes, notes, streaks and settings. | Your browser. It's an installable PWA and works offline. |
 
 No server, database or account is needed. Your reading history, stashes and notes stay in your browser.
@@ -53,7 +54,8 @@ No server, database or account is needed. Your reading history, stashes and note
 - **🌍 GCC spotlight**: the latest regional stories in a horizontal carousel.
 - **📈 Trending this week**: topic chips with story counts over the last 3 days.
 - **🧭 Explore**: every story from the last 14 days grouped by day. Filter by **region** (All · GCC · 🇦🇪 🇸🇦 🇶🇦 🇴🇲 🇧🇭 🇰🇼 · Rest of world), **topic**, *unread only*, or a free-text search (*Fortinet*, *NCA*, *LockBit*…).
-- **📖 Reader**: all ideas of a story, your note, **Save**, **Share** (native share sheet on mobile), **Copy as Markdown** and a link to the full article.
+- **✨ AI summaries** (optional): stories summarised by Claude carry an *AI summary* badge. Their last card adds a **Why it matters** line, for example *"Check FortiGate firmware on internet-facing firewalls."*
+- **📖 Reader**: all ideas of a story, the *Why it matters* line, your note, **Save**, **Share** (native share sheet on mobile), **Copy as Markdown** and a link to the full article.
 - **🔖 Stashes**: three built-in stashes plus your own. Edit notes inline, move stories between stashes, and export or copy a whole stash as Markdown.
 - **⚙️ Settings**: regions and topics to prioritise, the daily goal, light/dark/system theme, JSON backup and restore, reading-history reset, and the list of sources with story counts.
 - **📱 PWA**: install to the home screen or desktop. The last downloaded news is still readable offline.
@@ -120,6 +122,40 @@ Fetching feeds…
 Wrote 248 stories (29 GCC) → data/feed.json
 ```
 
+### Optional: turn on AI summaries with Claude
+
+Without this, ideas are cut from the publisher's summary sentence by sentence and GCC tagging uses keywords. With it, Claude rewrites each new story as 2–3 clear key ideas, adds a practical **Why it matters** line, and rates its GCC relevance. That corrects keyword mistakes, such as a person's surname "Al Kuwaiti" being tagged as Kuwait.
+
+1. Create an API key at **console.anthropic.com → API keys**.
+2. In GitHub, open the repo's **Settings → Secrets and variables → Actions → New repository secret**. Name it `ANTHROPIC_API_KEY` and paste the key.
+3. Run the workflow once (**Actions → Deploy OpsLog & CyberDigest → Run workflow**), or wait for the next 3-hourly run.
+
+The log shows lines like:
+
+```
+AI summaries: 42 new stories with claude-opus-5-5…
+AI summaries: 42 summarised, 3 off-topic stories dropped.
+Wrote 251 stories (31 GCC, 42 with AI summaries) → data/feed.json
+```
+
+How it keeps cost and risk down:
+
+- **Only new stories are sent.** Summaries are saved in `feed.json` and reused on later runs. Stories judged off-topic are remembered too, so they aren't checked again.
+- **Batches of 8 stories per request**, at low effort, with a cap of 60 new stories per run (`CYBERDIGEST_AI_MAX`).
+- **It can't make up details.** The prompt only allows facts from the publisher's text. Headline-only stories (Google News) keep the headline brief instead of an invented summary.
+- **If something fails, the feed still builds.** A missing key, a network error, a rate limit or a declined request means those stories keep their keyword summaries.
+- Security news can occasionally trip Claude's safety filters. The request lets the API retry a declined batch on its recommended fallback model automatically.
+
+Rough cost with the default model (`claude-opus-5-5`): about **$0.005–0.01 per story**. A typical 100–150 new stories a day comes to roughly **$0.50–1.50 a day**, and the per-run cap limits the worst case. To use a cheaper model, set a repository **variable** or env value `CYBERDIGEST_AI_MODEL`, for example `claude-haiku-5-5`. Set `CYBERDIGEST_AI=0` to switch summaries off.
+
+To try it locally:
+
+```powershell
+pip install -r tools\requirements.txt
+$env:ANTHROPIC_API_KEY = "sk-ant-..."     # or run `ant auth login` once and set $env:CYBERDIGEST_AI = "1"
+python tools\fetch_feeds.py
+```
+
 ### Optional: refresh daily with Windows Task Scheduler
 
 If you host the app on an internal IIS or file server, schedule the feed builder:
@@ -137,7 +173,8 @@ Register-ScheduledTask -TaskName "CyberDigest feed refresh" -Action $action -Tri
 - **No tracking and no accounts.** Reading history, stashes and notes are kept in `localStorage` in your browser. Use **Settings → Backup** to move them to another device.
 - The app only stores **headlines, short summaries and links**. "Full story ↗" always opens the original publisher.
 - Some sources (Google News) only provide a headline. Those cards show a *headline brief* and a link to the full story.
-- Topic and country tagging uses keyword rules, so it sometimes gets it wrong. A story about a physical attack in the region can occasionally slip through, and a story that only names a local company may be missed.
+- With AI summaries on, each story's title and publisher summary (never your reading data) is sent to the Claude API from GitHub Actions.
+- Topic and country tagging uses keyword rules, so it sometimes gets it wrong (AI summaries correct most GCC mistakes). A story about a physical attack in the region can occasionally slip through, and a story that only names a local company may be missed.
 - News older than **14 days** drops out of the feed, but anything you saved to a stash is kept.
 
 ## 8. File layout
@@ -149,6 +186,8 @@ cyberdigest/
 ├── sw.js                    Offline cache (network-first)
 ├── data/feed.json           Generated news feed (refreshed by CI)
 ├── tools/fetch_feeds.py     Feed builder: fetch → tag → split into ideas
+├── tools/ai_summaries.py    Optional Claude summaries: key ideas, why it matters, GCC relevance
+├── tools/requirements.txt   Pinned `anthropic` SDK for AI summaries
 └── assets/
     ├── css/app.css          Styles (light/dark, mobile-first)
     ├── js/data.js           Topics, GCC countries, helpers

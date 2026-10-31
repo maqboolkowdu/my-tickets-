@@ -28,8 +28,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install feed builder dependencies
+        run: pip install -r cyberdigest/tools/requirements.txt || echo "::warning::Could not install anthropic; AI summaries will be skipped"
       - name: Refresh CyberDigest news feed
+        # AI summaries run only when the ANTHROPIC_API_KEY repository secret is set.
         # A failed fetch keeps the committed feed.json, so the site still deploys.
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CYBERDIGEST_AI_MODEL: ${{ vars.CYBERDIGEST_AI_MODEL || 'claude-opus-5-5' }}
         run: python3 cyberdigest/tools/fetch_feeds.py || echo "::warning::Feed refresh failed; deploying the previous feed"
       - uses: actions/configure-pages@v5
         with:

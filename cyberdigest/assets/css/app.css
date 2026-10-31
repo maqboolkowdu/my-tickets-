@@ -74,6 +74,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .chip.on em, .toggle-chip:has(input:checked) em { color: rgba(255, 255, 255, .8); }
 .toggle-chip input { display: none; }
 .badge { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: rgba(255, 255, 255, .2); }
+.badge.ai { background: rgba(255, 255, 255, .28); }
+.takeaway { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .22); font-size: 14.5px; line-height: 1.5; }
+.takeaway b { display: block; font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; opacity: .85; }
 .chip-topic { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 99px; background: rgba(255, 255, 255, .2); white-space: nowrap; }
 
 /* today */
@@ -142,6 +145,8 @@ dialog::backdrop { background: rgba(2, 8, 20, .55); backdrop-filter: blur(3px); 
 .idea { padding: 14px 16px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border); }
 .idea p { margin: 4px 0 0; font-family: var(--serif); font-size: 17.5px; line-height: 1.6; }
 .idea.note { border-color: var(--gold); }
+.idea.takeaway-box { border-color: var(--accent-2); background: color-mix(in srgb, var(--accent-2) 8%, var(--surface-2)); }
+.idea.takeaway-box .idea-n { color: var(--accent-2); }
 .idea-n { font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); }
 .sheet-card footer { padding: 0 22px 22px; }
 
