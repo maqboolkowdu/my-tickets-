@@ -1,20 +1,21 @@
-/* CyberDigest — static reference data: topics, GCC countries, helpers. */
+/* CyberDigest — static reference data: topics, GCC countries, helpers.
+   `tint` is the flat block colour used on cards (always paired with dark ink text). */
 (function () {
   const TOPICS = {
-    ransomware:      { label: 'Ransomware',          emoji: '🔐', c1: '#ef4444', c2: '#7f1d1d' },
-    vulnerabilities: { label: 'Vulnerabilities',     emoji: '🩹', c1: '#f59e0b', c2: '#9a3412' },
-    breaches:        { label: 'Data breaches',       emoji: '💧', c1: '#ec4899', c2: '#831843' },
-    'threat-intel':  { label: 'Threat intel & APT',  emoji: '🎯', c1: '#8b5cf6', c2: '#3b0764' },
-    malware:         { label: 'Malware',             emoji: '🦠', c1: '#22c55e', c2: '#14532d' },
-    phishing:        { label: 'Phishing & fraud',    emoji: '🎣', c1: '#06b6d4', c2: '#164e63' },
-    identity:        { label: 'Identity & access',   emoji: '🪪', c1: '#3b82f6', c2: '#1e3a8a' },
-    cloud:           { label: 'Cloud & SaaS',        emoji: '☁️', c1: '#0ea5e9', c2: '#0c4a6e' },
-    network:         { label: 'Network & edge',      emoji: '🛜', c1: '#14b8a6', c2: '#134e4a' },
-    'ot-ics':        { label: 'OT & critical infra', emoji: '🏭', c1: '#a16207', c2: '#422006' },
-    ai:              { label: 'AI security',         emoji: '🤖', c1: '#6366f1', c2: '#312e81' },
-    policy:          { label: 'Policy & regulation', emoji: '⚖️', c1: '#64748b', c2: '#1e293b' },
-    education:       { label: 'Education sector',    emoji: '🎓', c1: '#84cc16', c2: '#365314' },
-    general:         { label: 'General',             emoji: '📰', c1: '#2563eb', c2: '#0f172a' },
+    ransomware:      { label: 'Ransomware',          emoji: '🔐', tint: '#ff7a59' },
+    vulnerabilities: { label: 'Vulnerabilities',     emoji: '🩹', tint: '#ffc93c' },
+    breaches:        { label: 'Data breaches',       emoji: '💧', tint: '#f4a7c0' },
+    'threat-intel':  { label: 'Threat intel & APT',  emoji: '🎯', tint: '#b9a6ff' },
+    malware:         { label: 'Malware',             emoji: '🦠', tint: '#7ed957' },
+    phishing:        { label: 'Phishing & fraud',    emoji: '🎣', tint: '#5fd3e0' },
+    identity:        { label: 'Identity & access',   emoji: '🪪', tint: '#7fb2ff' },
+    cloud:           { label: 'Cloud & SaaS',        emoji: '☁️', tint: '#a8dcff' },
+    network:         { label: 'Network & edge',      emoji: '🛜', tint: '#3ec5a8' },
+    'ot-ics':        { label: 'OT & critical infra', emoji: '🏭', tint: '#e3b77c' },
+    ai:              { label: 'AI security',         emoji: '🤖', tint: '#c9c2ff' },
+    policy:          { label: 'Policy & regulation', emoji: '⚖️', tint: '#cfd4dc' },
+    education:       { label: 'Education sector',    emoji: '🎓', tint: '#c6ec6b' },
+    general:         { label: 'General',             emoji: '📰', tint: '#2aa8e0' },
   };
 
   const COUNTRIES = {

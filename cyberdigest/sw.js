@@ -1,5 +1,5 @@
 /* CyberDigest service worker — app shell offline, network-first so news stays fresh. */
-const CACHE = 'cyberdigest-v2';
+const CACHE = 'cyberdigest-v3';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest', './data/feed.json',
   './assets/css/app.css', './assets/js/data.js', './assets/js/store.js', './assets/js/app.js',
@@ -18,9 +18,7 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  const same = url.origin === self.location.origin;
-  const font = /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname);
-  if (!same && !font) return;
+  if (url.origin !== self.location.origin) return;
   e.respondWith(
     fetch(req).then((res) => {
       if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }

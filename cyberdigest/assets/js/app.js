@@ -36,6 +36,7 @@
   }
 
   const primaryTopic = (item) => TOPICS[item.topics[0]] || TOPICS.general;
+  const tint = (item) => `--tint:${primaryTopic(item).tint}`;
   const flags = (item) => item.countries.map((c) => `<span title="${esc(COUNTRIES[c].name)}">${COUNTRIES[c].flag}</span>`).join('');
   const gccBadge = (item) => (item.gcc ? `<span class="badge gcc">${item.countries.length ? flags(item) : '🌍'} GCC</span>` : '');
   const topicChip = (item) => { const t = primaryTopic(item); return `<span class="chip-topic">${t.emoji} ${esc(t.label)}</span>`; };
@@ -102,15 +103,21 @@
     const links = ROUTES.map((r) => `<a href="#/${r.id}" class="${r.id === route ? 'active' : ''}">${icon(r.id)}<span>${r.label}</span>${r.id === 'stashes' && Object.keys(Store.state.saved).length ? `<em class="count">${Object.keys(Store.state.saved).length}</em>` : ''}</a>`).join('');
     $('#nav').innerHTML = links;
     $('#bottomNav').innerHTML = links;
+    document.body.dataset.route = route;
     const r = ROUTES.find((x) => x.id === route);
     $('#pageTitle').textContent = r.label;
     $('#pageSub').textContent = r.sub;
-    const goal = Store.state.prefs.goal, done = Store.todayCount();
-    $('#sideStats').innerHTML = `
-      <div class="stat-row"><span class="big">🔥 ${Store.streak()}</span><span class="muted small">day streak</span></div>
-      <div class="bar"><i style="width:${Math.min(100, (done / goal) * 100)}%"></i></div>
-      <div class="muted small">${done} / ${goal} ideas read today</div>
-      <div class="muted small feed-time">${FEED.generated ? `News updated ${ago(FEED.generated)}` : 'No news loaded yet'}</div>`;
+    $('#mastStats').innerHTML = `<span title="Day streak">🔥 ${Store.streak()}</span> · <span title="Read today / daily goal">${Store.todayCount()}/${Store.state.prefs.goal}</span>`;
+  }
+
+  // Sustainable-web footer: shows how much this visit actually downloaded.
+  function renderFooter() {
+    const nav = performance.getEntriesByType('navigation')[0];
+    let bytes = nav ? nav.transferSize : 0;
+    performance.getEntriesByType('resource').forEach((r) => { bytes += r.transferSize || 0; });
+    const weight = bytes ? `<b>${Math.max(1, Math.round(bytes / 1024))} KB</b> downloaded this visit` : '<b>Loaded from cache</b> (nothing downloaded)';
+    $('#siteFoot').innerHTML = `<span>🌱 ${weight}</span><span>System fonts only</span><span>No trackers, ads or third-party scripts</span><span>Dark mode saves power on OLED screens</span>
+      <span class="muted">${FEED.generated ? `News updated ${ago(FEED.generated)}` : ''}</span>`;
   }
 
   /* ---------- Today ---------- */
@@ -130,18 +137,26 @@
     viewer.story = ids.findIndex((id) => !Store.isRead(id));
     viewer.idea = 0;
 
+    const gccWeek = FEED.items.filter((i) => i.gcc && Date.now() - new Date(i.published) < 7 * 864e5).length;
     $('#view').innerHTML = `
-      <div class="hero">
-        <div>
-          <h2>${hello} 👋</h2>
-          <p class="muted">${ids.length ? `Your stack has <b>${ids.length}</b> stories picked from ${FEED.items.length} across ${new Set(FEED.items.map((i) => i.source)).size} sources.` : 'No stories yet. The news feed may still be loading.'}</p>
+      <section class="split">
+        <div class="brief">
+          <p class="eyebrow">${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <h2>${hello}</h2>
+          <p>${ids.length ? `Your briefing has <b>${ids.length}</b> stories, picked from ${FEED.items.length} across ${new Set(FEED.items.map((i) => i.source)).size} sources.` : 'No stories yet. The news feed may still be loading.'}</p>
+          <div class="kpis">
+            <div class="kpi"><b id="kpiDone">${done}/${goal}</b><small>Read today</small></div>
+            <div class="kpi"><b>🔥 ${Store.streak()}</b><small>Day streak</small></div>
+            <div class="kpi"><b>${gccWeek}</b><small>GCC this week</small></div>
+          </div>
+          <div class="meter" aria-hidden="true"><i id="meter" style="width:${pct * 100}%"></i></div>
+          <p class="brief-hint">Click the card or press <kbd>→</kbd> for the next idea, <kbd>←</kbd> to go back, <kbd>S</kbd> to save.</p>
         </div>
-        <div class="ring" style="--p:${pct}"><div><b>${done}</b><small>/ ${goal}</small></div></div>
-      </div>
-      <div class="stack-wrap" id="stackWrap"></div>
-      ${gcc.length ? `<section class="section"><div class="section-head"><h3>🌍 GCC spotlight</h3><a href="#/explore?region=gcc">See all →</a></div>
-        <div class="hscroll">${gcc.map(miniCard).join('')}</div></section>` : ''}
-      ${trending.length ? `<section class="section"><div class="section-head"><h3>📈 Trending this week</h3></div>
+        <div class="stack-wrap" id="stackWrap"></div>
+      </section>
+      ${gcc.length ? `<section class="section"><div class="section-head"><h3>GCC spotlight</h3><a href="#/explore?region=gcc">See all →</a></div>
+        <div class="tiles">${gcc.slice(0, 8).map(miniCard).join('')}</div></section>` : ''}
+      ${trending.length ? `<section class="section"><div class="section-head"><h3>Trending this week</h3><a href="#/explore">Explore →</a></div>
         <div class="chips">${trending.map(([t, n]) => `<a class="chip" href="#/explore?topic=${t}">${TOPICS[t].emoji} ${esc(TOPICS[t].label)} <em>${n}</em></a>`).join('')}</div></section>` : ''}`;
     renderCard();
     bindMini();
@@ -149,8 +164,8 @@
 
   function miniCard(item) {
     const t = primaryTopic(item);
-    return `<button class="mini" data-open="${item.id}" style="--c1:${t.c1};--c2:${t.c2}">
-      <span class="mini-top">${t.emoji} ${item.countries.length ? flags(item) : ''}</span>
+    return `<button class="mini" data-open="${item.id}" style="${tint(item)}">
+      <span class="mini-top">${t.emoji} ${esc(t.label)} <span class="spacer"></span>${item.countries.length ? flags(item) : ''}</span>
       <span class="mini-title">${esc(item.title)}</span>
       <span class="mini-meta">${esc(item.source)} · ${ago(item.published)}${Store.isRead(item.id) ? ' · ✓' : ''}</span>
     </button>`;
@@ -167,7 +182,7 @@
         <div class="done-emoji">🎉</div>
         <h3>${ids.length ? 'Stack complete!' : 'Nothing to read yet'}</h3>
         <p class="muted">${ids.length ? `You read ${Store.todayCount()} ideas today. Streak: 🔥 ${Store.streak()} day${Store.streak() === 1 ? '' : 's'}.` : 'Check back after the next news refresh.'}</p>
-        <div class="row center"><button class="btn btn-primary" id="more">Give me 5 more</button><a class="btn btn-ghost" href="#/explore">Browse everything</a></div>
+        <div class="row center"><button class="btn btn-primary" id="more">Give me 5 more</button><a class="btn" href="#/explore">Browse everything</a></div>
       </div>`;
       $('#more').addEventListener('click', () => {
         const extra = pick(rankUnread(new Set(ids)), 5);
@@ -180,12 +195,11 @@
     }
     const item = BY_ID.get(ids[viewer.story]);
     const ideas = ideasOf(item);
-    const t = primaryTopic(item);
     const saved = Store.savedFor(item.id);
     wrap.innerHTML = `
       <div class="stack-progress">${ids.map((id, i) => `<i class="${Store.isRead(id) ? 'read' : ''} ${i === viewer.story ? 'cur' : ''}"></i>`).join('')}</div>
-      <article class="idea-card" id="card" style="--c1:${t.c1};--c2:${t.c2}" tabindex="0" aria-label="Story ${viewer.story + 1} of ${ids.length}">
-        <div class="card-top">${topicChip(item)} ${gccBadge(item)} ${aiBadge(item)}<span class="spacer"></span><span class="muted-l">${readMins(item)} min</span></div>
+      <article class="idea-card" id="card" style="${tint(item)}" tabindex="0" aria-label="Story ${viewer.story + 1} of ${ids.length}">
+        <div class="card-top">${topicChip(item)} ${gccBadge(item)} ${aiBadge(item)}<span class="spacer"></span><span class="card-mins">${readMins(item)} min</span></div>
         <h2 class="card-title">${esc(item.title)}</h2>
         <div class="card-meta">${esc(item.source)} · ${ago(item.published)}</div>
         <p class="card-idea">${esc(ideas[viewer.idea])}</p>
@@ -196,9 +210,9 @@
         </div>
       </article>
       <div class="card-actions">
-        <button class="btn btn-ghost" id="prev" ${viewer.story === 0 && viewer.idea === 0 ? 'disabled' : ''} aria-label="Previous">←</button>
-        <button class="btn ${saved ? 'btn-saved' : 'btn-ghost'}" id="save">${saved ? '★ Saved' : '☆ Save'}</button>
-        <button class="btn btn-ghost" id="share">Share</button>
+        <button class="btn" id="prev" ${viewer.story === 0 && viewer.idea === 0 ? 'disabled' : ''} aria-label="Previous">←</button>
+        <button class="btn ${saved ? 'btn-saved' : ''}" id="save">${saved ? '★ Saved' : '☆ Save'}</button>
+        <button class="btn" id="share">Share</button>
         <button class="btn btn-primary grow" id="next">${viewer.idea < ideas.length - 1 ? 'Next idea →' : 'Got it ✓'}</button>
       </div>
       <p class="hint muted small">Tip: swipe left for next, right to save. Keyboard: ← → and S.</p>`;
@@ -220,9 +234,9 @@
     viewer.story = ids.findIndex((id, i) => i > viewer.story && !Store.isRead(id));
     viewer.idea = 0;
     renderChrome('today');
-    const pct = Math.min(1, Store.todayCount() / Store.state.prefs.goal);
-    const ring = $('.ring');
-    if (ring) { ring.style.setProperty('--p', pct); ring.querySelector('b').textContent = Store.todayCount(); }
+    const goal = Store.state.prefs.goal;
+    if ($('#kpiDone')) $('#kpiDone').textContent = `${Store.todayCount()}/${goal}`;
+    if ($('#meter')) $('#meter').style.width = `${Math.min(100, (Store.todayCount() / goal) * 100)}%`;
     renderCard();
   }
 
@@ -286,35 +300,43 @@
     const regions = [['all', '🌐 All'], ['gcc', '🌍 GCC'], ...Object.entries(COUNTRIES).map(([c, v]) => [c, `${v.flag} ${v.name}`]), ['global', '🗺️ Rest of world']];
     const topics = [['all', 'All topics'], ...Object.entries(TOPICS).map(([k, v]) => [k, `${v.emoji} ${v.label}`])];
 
-    let lastDay = '';
-    const rows = items.map((i) => {
-      const d = new Date(i.published);
-      const dk = dayKey(d);
-      let head = '';
-      if (dk !== lastDay) {
-        lastDay = dk;
+    const days = [];
+    items.forEach((i) => {
+      const d = new Date(i.published), dk = dayKey(d);
+      if (!days.length || days[days.length - 1].key !== dk) {
         const label = dk === dayKey() ? 'Today' : dk === dayKey(new Date(Date.now() - 864e5)) ? 'Yesterday' : d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' });
-        head = `<h4 class="day-head">${label}</h4>`;
+        days.push({ key: dk, label, items: [] });
       }
+      days[days.length - 1].items.push(i);
+    });
+    const row = (i) => {
       const t = primaryTopic(i);
-      return `${head}<button class="row-item ${Store.isRead(i.id) ? 'is-read' : ''}" data-open="${i.id}" style="--c1:${t.c1}">
-        <span class="row-emoji">${t.emoji}</span>
+      return `<button class="row-item ${Store.isRead(i.id) ? 'is-read' : ''}" data-open="${i.id}" style="${tint(i)}">
+        <span class="row-swatch" aria-hidden="true">${t.emoji}</span>
         <span class="row-main"><span class="row-title">${esc(i.title)}</span>
           <span class="row-meta">${esc(i.source)} · ${ago(i.published)} ${i.countries.length ? '· ' + flags(i) : i.gcc ? '· 🌍 GCC' : ''}</span></span>
         <span class="row-side">${Store.savedFor(i.id) ? '★' : ''}${Store.isRead(i.id) ? '<small>✓</small>' : ''}</span>
       </button>`;
-    }).join('');
+    };
+    const rows = days.map((d) => `<section class="day"><h4 class="day-head">${d.label}</h4><div class="list">${d.items.map(row).join('')}</div></section>`).join('');
 
+    const opts = (list, cur) => list.map(([v, l]) => `<option value="${v}" ${cur === v ? 'selected' : ''}>${l}</option>`).join('');
     $('#view').innerHTML = `
-      <div class="filters">
-        <div class="search"><input id="q" type="search" placeholder="Search stories, e.g. Fortinet, NCA, ransomware…" value="${esc(params.get('q') || '')}" /></div>
-        <div class="chips scroll">${regions.map(([v, l]) => `<a class="chip ${region === v ? 'on' : ''}" href="${link('region', v)}">${l}</a>`).join('')}</div>
-        <div class="chips scroll">${topics.map(([v, l]) => `<a class="chip ${topic === v ? 'on' : ''}" href="${link('topic', v)}">${l}</a>`).join('')}</div>
-        <label class="toggle small"><input type="checkbox" id="unread" ${unread ? 'checked' : ''}/> Unread only</label>
-      </div>
-      <p class="muted small">${total} ${total === 1 ? 'story' : 'stories'}</p>
-      <div class="list">${rows || '<div class="empty">No stories match these filters.</div>'}</div>
-      ${total > items.length ? '<div class="row center"><button class="btn btn-ghost" id="moreRows">Show more</button></div>' : ''}`;
+      <form class="filterbar" role="search" onsubmit="return false">
+        <label class="search"><span class="skip">Search stories</span><input id="q" type="search" placeholder="Search stories, e.g. Fortinet, NCA…" value="${esc(params.get('q') || '')}" /></label>
+        <div class="filter-row">
+          <span class="filter-label">Filter</span>
+          <select id="fRegion" aria-label="Region">${opts(regions, region)}</select>
+          <select id="fTopic" aria-label="Topic">${opts(topics, topic)}</select>
+        </div>
+        <div class="filter-tail">
+          <label class="toggle"><input type="checkbox" id="unread" ${unread ? 'checked' : ''}/> Unread only</label>
+          <a class="clear-link" href="#/explore">Clear</a>
+        </div>
+      </form>
+      <p class="count-line">${total} ${total === 1 ? 'story' : 'stories'}</p>
+      <div class="days">${rows || '<div class="empty">No stories match these filters.</div>'}</div>
+      ${total > items.length ? '<div class="row center" style="margin-top:16px"><button class="btn" id="moreRows">Show more</button></div>' : ''}`;
 
     bindMini();
     let tmr;
@@ -323,6 +345,8 @@
       tmr = setTimeout(() => { history.replaceState(null, '', link('q', e.target.value.trim())); explore.limit = 40; render(true); }, 300);
     });
     $('#unread').addEventListener('change', (e) => { location.hash = link('unread', e.target.checked ? '1' : ''); });
+    $('#fRegion').addEventListener('change', (e) => { location.hash = link('region', e.target.value); });
+    $('#fTopic').addEventListener('change', (e) => { location.hash = link('topic', e.target.value); });
     const more = $('#moreRows');
     if (more) more.addEventListener('click', () => { explore.limit += 40; render(); });
   }
@@ -331,11 +355,10 @@
   function openReader(id) {
     const item = BY_ID.get(id) || (Store.savedFor(id) || {}).item;
     if (!item) return;
-    const t = primaryTopic(item);
     const saved = Store.savedFor(id);
     $('#readerBody').innerHTML = `
-      <header class="reader-head" style="--c1:${t.c1};--c2:${t.c2}">
-        <div class="card-top">${item.topics.map((k) => `<span class="chip-topic">${TOPICS[k].emoji} ${esc(TOPICS[k].label)}</span>`).join('')} ${gccBadge(item)} ${aiBadge(item)}<span class="spacer"></span><button class="icon-btn light" data-close aria-label="Close">✕</button></div>
+      <header class="reader-head" style="${tint(item)}">
+        <div class="card-top">${item.topics.map((k) => `<span class="chip-topic">${TOPICS[k].emoji} ${esc(TOPICS[k].label)}</span>`).join('')} ${gccBadge(item)} ${aiBadge(item)}<button class="reader-close" data-close aria-label="Close">✕</button></div>
         <h2>${esc(item.title)}</h2>
         <div class="card-meta">${esc(item.source)} · ${new Date(item.published).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</div>
       </header>
@@ -346,9 +369,9 @@
       </div>
       <footer class="row wrap">
         <a class="btn btn-primary" href="${esc(item.link)}" target="_blank" rel="noopener">Read full story ↗</a>
-        <button class="btn ${saved ? 'btn-saved' : 'btn-ghost'}" id="rSave">${saved ? '★ Saved' : '☆ Save'}</button>
-        <button class="btn btn-ghost" id="rShare">Share</button>
-        <button class="btn btn-ghost" id="rMd">Copy as Markdown</button>
+        <button class="btn ${saved ? 'btn-saved' : ''}" id="rSave">${saved ? '★ Saved' : '☆ Save'}</button>
+        <button class="btn" id="rShare">Share</button>
+        <button class="btn" id="rMd">Copy as Markdown</button>
       </footer>`;
     const dlg = $('#reader');
     dlg.showModal();
@@ -412,20 +435,22 @@
     $('#view').innerHTML = `
       <div class="chips scroll">${st.stashes.map((s) => `<a class="chip ${s.id === sel ? 'on' : ''}" href="#/stashes?s=${s.id}">${s.emoji} ${esc(s.name)} <em>${counts[s.id] || 0}</em></a>`).join('')}</div>
       <div class="row wrap stash-tools">
-        <button class="btn btn-ghost" id="mdExport" ${list.length ? '' : 'disabled'}>⬇️ Export as Markdown</button>
-        <button class="btn btn-ghost" id="mdCopy" ${list.length ? '' : 'disabled'}>Copy as Markdown</button>
-        ${builtIn ? '' : '<button class="btn btn-ghost danger" id="delStash">Delete stash</button>'}
+        <button class="btn" id="mdExport" ${list.length ? '' : 'disabled'}>⬇ Export as Markdown</button>
+        <button class="btn" id="mdCopy" ${list.length ? '' : 'disabled'}>Copy as Markdown</button>
+        ${builtIn ? '' : '<button class="btn danger" id="delStash">Delete stash</button>'}
       </div>
       <div class="saved-list">${list.length ? list.map((v) => {
         const i = v.item, t = primaryTopic(i);
-        return `<article class="saved" style="--c1:${t.c1}">
-          <button class="saved-title" data-open="${i.id}">${t.emoji} ${esc(i.title)}</button>
-          <div class="row-meta">${esc(i.source)} · ${ago(i.published)} ${i.countries.length ? '· ' + flags(i) : ''} · saved ${ago(new Date(v.savedAt).toISOString())}</div>
-          <textarea class="note" data-note="${i.id}" rows="2" placeholder="Add your take: why does it matter, what would you do?">${esc(v.note)}</textarea>
-          <div class="row">
-            <select data-move="${i.id}" aria-label="Move to stash">${st.stashes.map((s) => `<option value="${s.id}" ${s.id === v.stash ? 'selected' : ''}>${s.emoji} ${esc(s.name)}</option>`).join('')}</select>
-            <a class="btn btn-ghost sm" href="${esc(i.link)}" target="_blank" rel="noopener">Source ↗</a>
-            <button class="btn btn-ghost sm danger" data-unsave="${i.id}">Remove</button>
+        return `<article class="saved" style="${tint(i)}">
+          <div class="saved-head"><button class="saved-title" data-open="${i.id}">${t.emoji} ${esc(i.title)}</button></div>
+          <div class="saved-body">
+            <div class="row-meta">${esc(i.source)} · ${ago(i.published)} ${i.countries.length ? '· ' + flags(i) : ''} · saved ${ago(new Date(v.savedAt).toISOString())}</div>
+            <textarea class="note" data-note="${i.id}" rows="2" placeholder="Add your take: why does it matter, what would you do?">${esc(v.note)}</textarea>
+            <div class="row wrap">
+              <select data-move="${i.id}" aria-label="Move to stash">${st.stashes.map((s) => `<option value="${s.id}" ${s.id === v.stash ? 'selected' : ''}>${s.emoji} ${esc(s.name)}</option>`).join('')}</select>
+              <a class="btn sm" href="${esc(i.link)}" target="_blank" rel="noopener">Source ↗</a>
+              <button class="btn sm danger" data-unsave="${i.id}">Remove</button>
+            </div>
           </div>
         </article>`;
       }).join('') : `<div class="empty">Nothing in <b>${esc(stash.name)}</b> yet. Tap <b>☆ Save</b> on any story to stash it here.</div>`}</div>`;
@@ -467,8 +492,8 @@
     const bySource = {};
     FEED.items.forEach((i) => { bySource[i.feed] = (bySource[i.feed] || 0) + 1; });
     const readTotal = Object.keys(Store.state.read).length;
-    $('#view').innerHTML = `
-      <section class="panel" id="interests">${interestsHTML()}
+    $('#view').innerHTML = `<div class="settings-grid">
+      <section class="panel full" id="interests">${interestsHTML()}
         <div class="row end"><button class="btn btn-primary" id="saveInterests">Save interests</button></div></section>
       <section class="panel">
         <h3>Appearance</h3>
@@ -478,16 +503,16 @@
         <h3>Your data</h3>
         <p class="muted small">Everything (reading history, stashes, notes) is stored only in this browser. ${readTotal} stories read, ${Object.keys(Store.state.saved).length} saved.</p>
         <div class="row wrap">
-          <button class="btn btn-ghost" id="backup">⬇️ Backup (JSON)</button>
-          <label class="btn btn-ghost">⬆️ Restore<input type="file" id="restore" accept="application/json" hidden /></label>
-          <button class="btn btn-ghost danger" id="resetRead">Reset reading history</button>
+          <button class="btn" id="backup">⬇ Backup (JSON)</button>
+          <label class="btn">⬆ Restore<input type="file" id="restore" accept="application/json" hidden /></label>
+          <button class="btn danger" id="resetRead">Reset history</button>
         </div>
       </section>
-      <section class="panel">
+      <section class="panel full">
         <h3>News sources</h3>
         <p class="muted small">Refreshed automatically every few hours by a GitHub Action. Last update: ${FEED.generated ? new Date(FEED.generated).toLocaleString() : 'never'}.</p>
         <ul class="sources">${FEED.sources.map((s) => `<li><span>${s.region === 'gcc' ? '🌍' : '🌐'} ${esc(s.name)}</span><em>${bySource[s.name] || 0}</em></li>`).join('')}</ul>
-      </section>`;
+      </section></div>`;
     $('#saveInterests').addEventListener('click', () => { readInterests($('#interests')); toast("Interests saved. Today's stack was rebuilt."); renderChrome('settings'); });
     $$('input[name=theme]').forEach((r) => r.addEventListener('change', () => { Store.setPref('theme', r.value); applyTheme(); }));
     $('#backup').addEventListener('click', () => download(`cyberdigest-backup-${dayKey()}.json`, Store.exportJSON(), 'application/json'));
@@ -509,9 +534,9 @@
   function showOnboarding() {
     const form = $('#onboardForm');
     form.innerHTML = `
-      <div class="onboard-hero"><img src="assets/icons/icon.svg" alt="" width="56" height="56"/><div>
+      <div class="onboard-hero">
         <h2>Welcome to CyberDigest</h2>
-        <p class="muted">Every day you get a short stack of cyber security stories, cut into bite-size ideas. GCC news is boosted by default. Pick what you care about. You can change it later in Settings.</p></div></div>
+        <p>Every day you get a short stack of cyber security stories, cut into bite-size ideas. GCC news is boosted by default. Pick what you care about. You can change it later in Settings.</p></div>
       ${interestsHTML()}
       <div class="row end"><button class="btn btn-primary" value="ok">Start reading →</button></div>`;
     const dlg = $('#onboard');
@@ -551,6 +576,7 @@
     }
     BY_ID = new Map(FEED.items.map((i) => [i.id, i]));
     render();
+    renderFooter();
     if (!Store.state.prefs.onboarded) showOnboarding();
   }
 

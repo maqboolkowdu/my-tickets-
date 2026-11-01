@@ -5,42 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>CyberDigest — Daily Cyber Ideas</title>
   <meta name="description" content="Bite-size daily cyber security news from around the world with a GCC focus: UAE, Saudi Arabia, Qatar, Oman, Bahrain and Kuwait." />
-  <meta name="theme-color" content="#0b1724" />
+  <meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0b0b0b" media="(prefers-color-scheme: dark)" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="assets/icons/icon-192.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet" />
+  <!-- Sustainable by design: system fonts only, no web fonts, trackers, ads or third-party scripts. -->
   <link rel="stylesheet" href="assets/css/app.css" />
   <script>
     try { const s = JSON.parse(localStorage.getItem('cyberdigest:v1') || '{}'); const t = s.prefs && s.prefs.theme; if (t && t !== 'system') document.documentElement.dataset.theme = t; } catch (e) {}
   </script>
 </head>
 <body>
-  <div class="app">
-    <aside class="sidebar" aria-label="Main navigation">
-      <a class="brand" href="#/today">
-        <img src="assets/icons/icon.svg" alt="" width="36" height="36" />
-        <span><strong>CyberDigest</strong><small>Daily cyber ideas</small></span>
-      </a>
-      <nav class="nav" id="nav"></nav>
-      <div class="side-card" id="sideStats"></div>
-    </aside>
+  <a class="skip" href="#view">Skip to content</a>
+  <header class="masthead">
+    <a class="brand" href="#/today" aria-label="CyberDigest home">
+      <span class="brand-mark">CYBER<br />DIGEST</span>
+    </a>
+    <nav class="topnav" id="nav" aria-label="Main navigation"></nav>
+    <div class="mast-right">
+      <span class="mast-stats" id="mastStats"></span>
+      <button class="icon-btn" id="btnTheme" title="Toggle light / dark" aria-label="Toggle light or dark theme"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+    </div>
+  </header>
 
-    <main class="main">
-      <header class="topbar">
-        <div>
-          <h1 id="pageTitle">Today</h1>
-          <p id="pageSub" class="muted"></p>
-        </div>
-        <div class="topbar-actions">
-          <button class="icon-btn" id="btnTheme" title="Toggle theme" aria-label="Toggle theme">🌓</button>
-        </div>
-      </header>
-      <section id="view" class="view" tabindex="-1"></section>
-    </main>
-  </div>
+  <main class="main">
+    <div class="page-head" id="pageHead">
+      <h1 id="pageTitle">Today</h1>
+      <p id="pageSub"></p>
+    </div>
+    <section id="view" class="view" tabindex="-1"></section>
+  </main>
+
+  <footer class="site-foot" id="siteFoot"></footer>
 
   <nav class="bottom-nav" id="bottomNav" aria-label="Mobile navigation"></nav>
 
@@ -57,7 +54,7 @@
       <label class="field"><span>New stash</span><input id="newStash" placeholder="e.g. Ransomware cases for my blog" maxlength="60" /></label>
       <label class="field"><span>Your note <small class="muted">(optional)</small></span><textarea id="saveNote" rows="3" placeholder="Why does this matter for our campus / organisation?"></textarea></label>
       <div class="row end">
-        <button value="cancel" class="btn btn-ghost">Cancel</button>
+        <button value="cancel" class="btn">Cancel</button>
         <button value="ok" class="btn btn-primary">Save</button>
       </div>
     </form>
