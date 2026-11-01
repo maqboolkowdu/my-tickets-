@@ -59,6 +59,22 @@ No server, database or account is needed. Your reading history, stashes and note
 - **🔖 Stashes**: three built-in stashes plus your own. Edit notes inline, move stories between stashes, and export or copy a whole stash as Markdown.
 - **⚙️ Settings**: regions and topics to prioritise, the daily goal, light/dark/system theme, JSON backup and restore, reading-history reset, and the list of sources with story counts.
 - **📱 PWA**: install to the home screen or desktop. The last downloaded news is still readable offline.
+- **🖥️ Desktop and 📱 mobile layouts**:
+  - **Desktop:** a boxed top menu. Today shows your briefing panel next to the idea card, with the GCC spotlight as a 4-column grid below. Explore has a one-line search and filter bar and two columns of results.
+  - **Mobile:** the same design stacked in one column, with a bottom menu.
+
+### Sustainable web design
+
+The look follows the *sustainable web design* trend: flat colour blocks with bold ink outlines, as on the C40 Cities site. It also keeps the page light:
+
+| Choice | Why it saves energy and data |
+|---|---|
+| **System fonts only** | No web-font downloads. The app uses the fonts already on the device (Segoe UI on Windows, San Francisco on Apple, Roboto on Android). |
+| **No images, gradients, shadows or blur** | Less to download and less work for the graphics chip. Colour comes from flat blocks. |
+| **True-black dark mode** | On OLED phone screens, black pixels are switched off. |
+| **No trackers, ads or third-party scripts** | Every byte comes from the app itself. |
+| **Offline cache** | Repeat visits load from the device. The footer shows how many KB the visit actually downloaded. |
+| **Reduced motion respected** | Animations turn off when the device asks for less motion. |
 
 ### Topics the feed builder detects
 
