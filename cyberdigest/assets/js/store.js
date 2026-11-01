@@ -2,7 +2,7 @@
 (function () {
   const KEY = 'cyberdigest:v1';
   const DEFAULT = {
-    prefs: { topics: [], countries: ['AE', 'SA', 'QA', 'OM', 'BH', 'KW'], goal: 8, theme: 'system', onboarded: false },
+    prefs: { topics: [], countries: ['AE', 'SA', 'QA', 'OM', 'BH', 'KW'], goal: 8, theme: 'system', skin: 'flat', onboarded: false },
     read: {},        // storyId -> timestamp
     days: {},        // 'YYYY-MM-DD' -> stories read that day
     saved: {},       // storyId -> { stash, note, savedAt, item }

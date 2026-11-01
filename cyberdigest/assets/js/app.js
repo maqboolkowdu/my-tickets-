@@ -139,6 +139,26 @@
 
     const gccWeek = FEED.items.filter((i) => i.gcc && Date.now() - new Date(i.published) < 7 * 864e5).length;
     $('#view').innerHTML = `
+      <section class="hero3d" aria-label="CyberDigest">
+        <h2 class="mega">CYBER DIGEST</h2>
+        <div class="hero-tags"><span>■ Daily briefing</span><span>■ GCC first</span><span>■ ${FEED.items.length} stories · ${new Set(FEED.items.map((i) => i.source)).size} sources</span></div>
+        <div class="hero-row">
+          <div class="hero-cell hero-text">
+            <p>Bite-size cyber security news from around the world, with the GCC first. Read a few ideas a day and keep the ones that matter.</p>
+            <button class="btn-cta" id="ctaStart">Start today's briefing ↓</button>
+          </div>
+          <div class="hero-cell hero-obj" aria-hidden="true">
+            <div class="cube-scene"><div class="cube">
+              <div class="face f-front"><svg viewBox="0 0 24 24" width="46%" height="46%"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z" fill="#ff6a13"/><path d="M8.5 12l2.5 2.5 4.5-5" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div class="face f-back">0DAY</div><div class="face f-right">CVE</div><div class="face f-left">APT</div><div class="face f-top">GCC</div><div class="face f-bottom">IOC</div>
+            </div><div class="cube-shadow"></div></div>
+          </div>
+          <div class="hero-cell hero-dark" aria-hidden="true">
+            <div class="globe"><i></i><i></i><i></i><i></i></div>
+            <span class="hero-dark-label">GCC · 7 days <b>${gccWeek}</b></span>
+          </div>
+        </div>
+      </section>
       <section class="split">
         <div class="brief">
           <p class="eyebrow">${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
@@ -160,6 +180,7 @@
         <div class="chips">${trending.map(([t, n]) => `<a class="chip" href="#/explore?topic=${t}">${TOPICS[t].emoji} ${esc(TOPICS[t].label)} <em>${n}</em></a>`).join('')}</div></section>` : ''}`;
     renderCard();
     bindMini();
+    $('#ctaStart').addEventListener('click', () => $('#stackWrap').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }));
   }
 
   function miniCard(item) {
@@ -198,6 +219,7 @@
     const saved = Store.savedFor(item.id);
     wrap.innerHTML = `
       <div class="stack-progress">${ids.map((id, i) => `<i class="${Store.isRead(id) ? 'read' : ''} ${i === viewer.story ? 'cur' : ''}"></i>`).join('')}</div>
+      <div class="card-stage"><div class="card-3d" id="card3d">
       <article class="idea-card" id="card" style="${tint(item)}" tabindex="0" aria-label="Story ${viewer.story + 1} of ${ids.length}">
         <div class="card-top">${topicChip(item)} ${gccBadge(item)} ${aiBadge(item)}<span class="spacer"></span><span class="card-mins">${readMins(item)} min</span></div>
         <h2 class="card-title">${esc(item.title)}</h2>
@@ -208,7 +230,7 @@
           ${ideas.length > 1 ? `<span class="dots">${ideas.map((_, i) => `<i class="${i === viewer.idea ? 'on' : ''}"></i>`).join('')}</span>` : '<span></span>'}
           <a href="${esc(item.link)}" target="_blank" rel="noopener" class="read-link">Full story ↗</a>
         </div>
-      </article>
+      </article></div></div>
       <div class="card-actions">
         <button class="btn" id="prev" ${viewer.story === 0 && viewer.idea === 0 ? 'disabled' : ''} aria-label="Previous">←</button>
         <button class="btn ${saved ? 'btn-saved' : ''}" id="save">${saved ? '★ Saved' : '☆ Save'}</button>
@@ -222,6 +244,19 @@
     $('#save').addEventListener('click', () => openSave(item, renderCard));
     $('#share').addEventListener('click', () => share(item));
     bindSwipe($('#card'));
+    bindTilt($('#card3d'));
+  }
+
+  // Immersive design: the card tilts towards the mouse (PC only; off when the device asks for less motion).
+  function bindTilt(el) {
+    if (!el || !matchMedia('(pointer: fine)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    el.addEventListener('pointermove', (e) => {
+      if (document.documentElement.dataset.skin !== 'immersive' || e.buttons) return;
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--ry', `${((e.clientX - r.left) / r.width - 0.5) * 10}deg`);
+      el.style.setProperty('--rx', `${((e.clientY - r.top) / r.height - 0.5) * -8}deg`);
+    });
+    el.addEventListener('pointerleave', () => { el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg'); });
   }
 
   function next() {
@@ -496,6 +531,8 @@
       <section class="panel full" id="interests">${interestsHTML()}
         <div class="row end"><button class="btn btn-primary" id="saveInterests">Save interests</button></div></section>
       <section class="panel">
+        <h3>Design</h3>
+        <div class="chips">${[['flat', 'Flat (sustainable)'], ['immersive', 'Immersive 3D']].map(([v, l]) => `<label class="chip toggle-chip"><input type="radio" name="skin" value="${v}" ${(p.skin || 'flat') === v ? 'checked' : ''}/>${l}</label>`).join('')}</div>
         <h3>Appearance</h3>
         <div class="chips">${['system', 'light', 'dark'].map((t) => `<label class="chip toggle-chip"><input type="radio" name="theme" value="${t}" ${p.theme === t ? 'checked' : ''}/>${t[0].toUpperCase() + t.slice(1)}</label>`).join('')}</div>
       </section>
@@ -515,6 +552,7 @@
       </section></div>`;
     $('#saveInterests').addEventListener('click', () => { readInterests($('#interests')); toast("Interests saved. Today's stack was rebuilt."); renderChrome('settings'); });
     $$('input[name=theme]').forEach((r) => r.addEventListener('change', () => { Store.setPref('theme', r.value); applyTheme(); }));
+    $$('input[name=skin]').forEach((r) => r.addEventListener('change', () => { Store.setPref('skin', r.value); applyTheme(); toast(r.value === 'immersive' ? 'Immersive 3D design on' : 'Flat design on'); }));
     $('#backup').addEventListener('click', () => download(`cyberdigest-backup-${dayKey()}.json`, Store.exportJSON(), 'application/json'));
     $('#restore').addEventListener('change', async (e) => {
       const f = e.target.files[0];
@@ -545,10 +583,17 @@
   }
 
   function applyTheme() {
-    const t = Store.state.prefs.theme;
-    if (t === 'system') delete document.documentElement.dataset.theme;
-    else document.documentElement.dataset.theme = t;
+    const { theme, skin } = Store.state.prefs;
+    const root = document.documentElement;
+    if (theme === 'system') delete root.dataset.theme;
+    else root.dataset.theme = theme;
+    if (skin === 'immersive') root.dataset.skin = 'immersive';
+    else delete root.dataset.skin;
   }
+
+  // A ?skin=flat or ?skin=immersive link switches design (handy for comparing the two).
+  const skinParam = new URLSearchParams(location.search).get('skin');
+  if (skinParam === 'flat' || skinParam === 'immersive') Store.setPref('skin', skinParam);
 
   $('#btnTheme').addEventListener('click', () => {
     const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
