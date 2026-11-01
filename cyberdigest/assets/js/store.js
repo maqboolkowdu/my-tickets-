@@ -9,7 +9,7 @@
     stashes: [
       { id: 'later', name: 'Read later', emoji: '🔖' },
       { id: 'gcc', name: 'GCC watch', emoji: '🌍' },
-      { id: 'blog', name: 'Ideas for my website', emoji: '✍️' },
+      { id: 'blog', name: 'Bytes for my website', emoji: '✍️' },
     ],
     stack: { day: '', ids: [] },
   };
@@ -18,6 +18,8 @@
   try { state = Object.assign(structuredClone(DEFAULT), JSON.parse(localStorage.getItem(KEY) || '{}')); }
   catch (e) { state = structuredClone(DEFAULT); }
   state.prefs = Object.assign({}, DEFAULT.prefs, state.prefs);
+  const blog = state.stashes.find((s) => s.id === 'blog' && s.name === 'Ideas for my website');
+  if (blog) blog.name = 'Bytes for my website'; // renamed when "ideas" became "bytes"
 
   const save = () => localStorage.setItem(KEY, JSON.stringify(state));
 

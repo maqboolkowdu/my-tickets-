@@ -15,9 +15,9 @@
   };
   const icon = (name) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
   const ROUTES = [
-    { id: 'today', label: 'Today', sub: 'Your daily stack of cyber ideas' },
+    { id: 'today', label: 'Today', sub: 'Your daily stack of cyber bytes' },
     { id: 'explore', label: 'Explore', sub: 'Every story, filtered by region and topic' },
-    { id: 'stashes', label: 'Stashes', sub: 'Ideas you saved, with your notes' },
+    { id: 'stashes', label: 'Stashes', sub: 'Bytes you saved, with your notes' },
     { id: 'settings', label: 'Settings', sub: 'Interests, daily goal and data' },
   ];
 
@@ -144,7 +144,7 @@
         <div class="hero-tags"><span>■ Daily briefing</span><span>■ GCC first</span><span>■ ${FEED.items.length} stories · ${new Set(FEED.items.map((i) => i.source)).size} sources</span></div>
         <div class="hero-row">
           <div class="hero-cell hero-text">
-            <p>Bite-size cyber security news from around the world, with the GCC first. Read a few ideas a day and keep the ones that matter.</p>
+            <p>Bite-size cyber security news from around the world, with the GCC first. Read a few bytes a day and keep the ones that matter.</p>
             <button class="btn-cta" id="ctaStart">Start today's briefing ↓</button>
           </div>
           <div class="hero-cell hero-obj" aria-hidden="true">
@@ -163,14 +163,14 @@
         <div class="brief">
           <p class="eyebrow">${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
           <h2>${hello}</h2>
-          <p>${ids.length ? `Your briefing has <b>${ids.length}</b> stories, picked from ${FEED.items.length} across ${new Set(FEED.items.map((i) => i.source)).size} sources.` : 'No stories yet. The news feed may still be loading.'}</p>
+          <p>${ids.length ? `Your briefing has <b>${ids.length}</b> bytes, picked from ${FEED.items.length} stories across ${new Set(FEED.items.map((i) => i.source)).size} sources.` : 'No stories yet. The news feed may still be loading.'}</p>
           <div class="kpis">
             <div class="kpi"><b id="kpiDone">${done}/${goal}</b><small>Read today</small></div>
             <div class="kpi"><b>🔥 ${Store.streak()}</b><small>Day streak</small></div>
             <div class="kpi"><b>${gccWeek}</b><small>GCC this week</small></div>
           </div>
           <div class="meter" aria-hidden="true"><i id="meter" style="width:${pct * 100}%"></i></div>
-          <p class="brief-hint">Click the card or press <kbd>→</kbd> for the next idea, <kbd>←</kbd> to go back, <kbd>S</kbd> to save.</p>
+          <p class="brief-hint">Click the card or press <kbd>→</kbd> for the next point, <kbd>←</kbd> to go back, <kbd>S</kbd> to save.</p>
         </div>
         <div class="stack-wrap" id="stackWrap"></div>
       </section>
@@ -202,8 +202,8 @@
       wrap.innerHTML = `<div class="done-card">
         <div class="done-emoji">🎉</div>
         <h3>${ids.length ? 'Stack complete!' : 'Nothing to read yet'}</h3>
-        <p class="muted">${ids.length ? `You read ${Store.todayCount()} ideas today. Streak: 🔥 ${Store.streak()} day${Store.streak() === 1 ? '' : 's'}.` : 'Check back after the next news refresh.'}</p>
-        <div class="row center"><button class="btn btn-primary" id="more">Give me 5 more</button><a class="btn" href="#/explore">Browse everything</a></div>
+        <p class="muted">${ids.length ? `You read ${Store.todayCount()} bytes today. Streak: 🔥 ${Store.streak()} day${Store.streak() === 1 ? '' : 's'}.` : 'Check back after the next news refresh.'}</p>
+        <div class="row center"><button class="btn btn-primary" id="more">Give me 5 more bytes</button><a class="btn" href="#/explore">Browse everything</a></div>
       </div>`;
       $('#more').addEventListener('click', () => {
         const extra = pick(rankUnread(new Set(ids)), 5);
@@ -235,7 +235,7 @@
         <button class="btn" id="prev" ${viewer.story === 0 && viewer.idea === 0 ? 'disabled' : ''} aria-label="Previous">←</button>
         <button class="btn ${saved ? 'btn-saved' : ''}" id="save">${saved ? '★ Saved' : '☆ Save'}</button>
         <button class="btn" id="share">Share</button>
-        <button class="btn btn-primary grow" id="next">${viewer.idea < ideas.length - 1 ? 'Next idea →' : 'Got it ✓'}</button>
+        <button class="btn btn-primary grow" id="next">${viewer.idea < ideas.length - 1 ? 'Next point →' : 'Got it ✓'}</button>
       </div>
       <p class="hint muted small">Tip: swipe left for next, right to save. Keyboard: ← → and S.</p>`;
 
@@ -398,7 +398,7 @@
         <div class="card-meta">${esc(item.source)} · ${new Date(item.published).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</div>
       </header>
       <div class="reader-ideas">
-        ${ideasOf(item).map((txt, n) => `<div class="idea"><span class="idea-n">Idea ${n + 1}</span><p>${esc(txt)}</p></div>`).join('')}
+        ${ideasOf(item).map((txt, n) => `<div class="idea"><span class="idea-n">Key point ${n + 1}</span><p>${esc(txt)}</p></div>`).join('')}
         ${item.takeaway ? `<div class="idea takeaway-box"><span class="idea-n">Why it matters</span><p>${esc(item.takeaway)}</p></div>` : ''}
         ${saved && saved.note ? `<div class="idea note"><span class="idea-n">Your note</span><p>${esc(saved.note)}</p></div>` : ''}
       </div>
@@ -510,7 +510,7 @@
       <h3>Topics you care about</h3>
       <div class="chips">${Object.entries(TOPICS).filter(([k]) => k !== 'general').map(([k, v]) => `<label class="chip toggle-chip"><input type="checkbox" name="topic" value="${k}" ${p.topics.includes(k) ? 'checked' : ''}/>${v.emoji} ${v.label}</label>`).join('')}</div>
       <h3>Daily goal</h3>
-      <div class="chips">${[5, 8, 10, 15, 20].map((n) => `<label class="chip toggle-chip"><input type="radio" name="goal" value="${n}" ${p.goal === n ? 'checked' : ''}/>${n} ideas</label>`).join('')}</div>`;
+      <div class="chips">${[5, 8, 10, 15, 20].map((n) => `<label class="chip toggle-chip"><input type="radio" name="goal" value="${n}" ${p.goal === n ? 'checked' : ''}/>${n} bytes</label>`).join('')}</div>`;
   }
 
   function readInterests(root) {
@@ -574,7 +574,7 @@
     form.innerHTML = `
       <div class="onboard-hero">
         <h2>Welcome to CyberDigest</h2>
-        <p>Every day you get a short stack of cyber security stories, cut into bite-size ideas. GCC news is boosted by default. Pick what you care about. You can change it later in Settings.</p></div>
+        <p>Every day you get a short stack of cyber security bytes: news stories cut down to 2–3 key points each. GCC news is boosted by default. Pick what you care about. You can change it later in Settings.</p></div>
       ${interestsHTML()}
       <div class="row end"><button class="btn btn-primary" value="ok">Start reading →</button></div>`;
     const dlg = $('#onboard');

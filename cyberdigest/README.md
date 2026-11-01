@@ -1,6 +1,6 @@
-# CyberDigest — Daily Cyber Security Ideas, with a GCC Focus
+# CyberDigest — Daily Cyber Security Bytes, with a GCC Focus
 
-> A free, installable reading app that turns the day's cyber security news into **short, swipeable idea cards**. Global headlines are included, and stories from **the UAE, Saudi Arabia, Qatar, Oman, Bahrain and Kuwait** are boosted. Read a few every morning, save the important ones into **stashes**, and export them as Markdown for your blog or team briefing.
+> A free, installable reading app that turns the day's cyber security news into **short, swipeable cards called bytes**. Global headlines are included, and stories from **the UAE, Saudi Arabia, Qatar, Oman, Bahrain and Kuwait** are boosted. Read a few every morning, save the important ones into **stashes**, and export them as Markdown for your blog or team briefing.
 
 ![Platform](https://img.shields.io/badge/platform-any%20browser-2563eb) ![Backend](https://img.shields.io/badge/backend-none-0ea5a4) ![Refresh](https://img.shields.io/badge/news-every%203%20hours-7c3aed)
 
@@ -10,14 +10,14 @@
 
 ## 1. Description
 
-CyberDigest is a micro-learning reader for security news, built in the style of "key ideas" reading apps. Long articles are hard to fit into a busy day, so each story is cut into one to three short **ideas** (about 45 words each) that you read on a card. Tap or swipe to move on.
+CyberDigest is a micro-learning reader for security news. Long articles are hard to fit into a busy day, so each news story becomes a **byte**: a card with one to three short **key points** (about 45 words each). Tap or swipe to move on.
 
 It has two parts:
 
 | Part | What it does | Where it runs |
 |---|---|---|
-| **Feed builder** (`tools/fetch_feeds.py`) | Downloads 20 RSS feeds, removes duplicates, tags each story with **topics** (ransomware, vulnerabilities, OT, AI security, policy…) and **GCC countries**, splits summaries into ideas, and writes `data/feed.json`. | GitHub Actions, every 3 hours. Python standard library only. |
-| **AI summaries** (`tools/ai_summaries.py`, optional) | Sends each *new* story to Claude, which writes 2–3 key ideas, a **"Why it matters"** line for defenders, and a GCC relevance rating. It also drops stories that aren't really about cyber security. | Same GitHub Action, only when an `ANTHROPIC_API_KEY` secret is set. |
+| **Feed builder** (`tools/fetch_feeds.py`) | Downloads 20 RSS feeds, removes duplicates, tags each story with **topics** (ransomware, vulnerabilities, OT, AI security, policy…) and **GCC countries**, splits summaries into key points, and writes `data/feed.json`. | GitHub Actions, every 3 hours. Python standard library only. |
+| **AI summaries** (`tools/ai_summaries.py`, optional) | Sends each *new* story to Claude, which writes 2–3 key points, a **"Why it matters"** line for defenders, and a GCC relevance rating. It also drops stories that aren't really about cyber security. | Same GitHub Action, only when an `ANTHROPIC_API_KEY` secret is set. |
 | **Web app** (`index.html`) | The daily stack, Explore filters, stashes, notes, streaks and settings. | Your browser. It's an installable PWA and works offline. |
 
 No server, database or account is needed. Your reading history, stashes and notes stay in your browser.
@@ -27,9 +27,9 @@ No server, database or account is needed. Your reading history, stashes and note
 | Problem | How CyberDigest solves it |
 |---|---|
 | Security news is spread over dozens of sites, and GCC stories get buried under US/EU coverage. | One feed from 20 sources, with **dedicated GCC sources** and per-country searches. Regional stories get a ranking boost. |
-| You don't have time to read 15 full articles before your shift. | A **daily stack** (5–20 stories, you choose) of bite-size ideas. Most days take 5 minutes. |
-| You read something useful and can't find it again a week later. | **Stashes** (Read later, GCC watch, Ideas for my website, or your own) with a personal note on each story. |
-| Writing a weekly "threat briefing" for your team or website takes hours. | **Export a stash as Markdown**: titles, sources, key ideas, your notes and links, ready to paste into WordPress, Hugo, Teams or an e-mail. |
+| You don't have time to read 15 full articles before your shift. | A **daily stack** (5–20 bytes, you choose). Each byte is a news story cut down to its key points. Most days take 5 minutes. |
+| You read something useful and can't find it again a week later. | **Stashes** (Read later, GCC watch, Bytes for my website, or your own) with a personal note on each story. |
+| Writing a weekly "threat briefing" for your team or website takes hours. | **Export a stash as Markdown**: titles, sources, key points, your notes and links, ready to paste into WordPress, Hugo, Teams or an e-mail. |
 | Reading habits drop off. | A **daily goal ring** and **streak counter**. |
 
 ## 3. Scenario
@@ -38,29 +38,29 @@ No server, database or account is needed. Your reading history, stashes and note
 >
 > You open **CyberDigest** from your phone's home screen. The ring shows **0 / 8**.
 >
-> 1. The first card is a **🇸🇦 Saudi** story: *"Saudi Arabia opens drone and cyber centres."* You read the first idea, tap, read the second, then tap **Got it ✓**.
+> 1. The first card is a **🇸🇦 Saudi** story: *"Saudi Arabia opens drone and cyber centres."* You read the first key point, tap, read the second, then tap **Got it ✓**.
 > 2. Next comes a **🛜 Network & edge** story about a new FortiGate SSL-VPN flaw. You run FortiGates on campus, so you **swipe right** to save it to *GCC watch* and add a note: *"Check firmware on HQ and COE edge firewalls today."*
 > 3. You work through the rest of the stack: a ransomware group hitting education, a UAE Cybersecurity Council announcement, a Microsoft Entra phishing campaign.
 >
 > At 7:50 the ring is full: **🎯 Daily goal reached! Streak: 12 days**.
 >
-> On Thursday afternoon you open **Stashes → Ideas for my website**, click **Export as Markdown**, and paste the file into your blog as *"This week in GCC cyber security."* Each story keeps its sources, key ideas and your own take.
+> On Thursday afternoon you open **Stashes → Bytes for my website**, click **Export as Markdown**, and paste the file into your blog as *"This week in GCC cyber security."* Each story keeps its sources, key points and your own take.
 
 ---
 
 ## 4. Features
 
-- **☀️ Today**: a personalised stack of N stories (default 8), with a progress bar, idea dots, the goal ring and a streak counter. Tap or swipe left for the next idea, swipe right to save. Keys: `←` `→` `Space` `S`.
+- **☀️ Today**: a personalised stack of N bytes (default 8), with a progress bar, key-point dots, your daily goal and a streak counter. Tap or swipe left for the next key point, swipe right to save. Keys: `←` `→` `Space` `S`.
 - **🌍 GCC spotlight**: the latest regional stories in a horizontal carousel.
 - **📈 Trending this week**: topic chips with story counts over the last 3 days.
 - **🧭 Explore**: every story from the last 14 days grouped by day. Filter by **region** (All · GCC · 🇦🇪 🇸🇦 🇶🇦 🇴🇲 🇧🇭 🇰🇼 · Rest of world), **topic**, *unread only*, or a free-text search (*Fortinet*, *NCA*, *LockBit*…).
 - **✨ AI summaries** (optional): stories summarised by Claude carry an *AI summary* badge. Their last card adds a **Why it matters** line, for example *"Check FortiGate firmware on internet-facing firewalls."*
-- **📖 Reader**: all ideas of a story, the *Why it matters* line, your note, **Save**, **Share** (native share sheet on mobile), **Copy as Markdown** and a link to the full article.
+- **📖 Reader**: all key points of a story, the *Why it matters* line, your note, **Save**, **Share** (native share sheet on mobile), **Copy as Markdown** and a link to the full article.
 - **🔖 Stashes**: three built-in stashes plus your own. Edit notes inline, move stories between stashes, and export or copy a whole stash as Markdown.
 - **⚙️ Settings**: regions and topics to prioritise, the daily goal, light/dark/system theme, JSON backup and restore, reading-history reset, and the list of sources with story counts.
 - **📱 PWA**: install to the home screen or desktop. The last downloaded news is still readable offline.
 - **🖥️ Desktop and 📱 mobile layouts**:
-  - **Desktop:** a boxed top menu. Today shows your briefing panel next to the idea card, with the GCC spotlight as a 4-column grid below. Explore has a one-line search and filter bar and two columns of results.
+  - **Desktop:** a boxed top menu. Today shows your briefing panel next to the byte card, with the GCC spotlight as a 4-column grid below. Explore has a one-line search and filter bar and two columns of results.
   - **Mobile:** the same design stacked in one column, with a bottom menu.
 
 ### Two designs: Flat or Immersive 3D
@@ -151,7 +151,7 @@ Wrote 248 stories (29 GCC) → data/feed.json
 
 ### Optional: turn on AI summaries with Claude
 
-Without this, ideas are cut from the publisher's summary sentence by sentence and GCC tagging uses keywords. With it, Claude rewrites each new story as 2–3 clear key ideas, adds a practical **Why it matters** line, and rates its GCC relevance. That corrects keyword mistakes, such as a person's surname "Al Kuwaiti" being tagged as Kuwait.
+Without this, key points are cut from the publisher's summary sentence by sentence and GCC tagging uses keywords. With it, Claude rewrites each new story as 2–3 clear key points, adds a practical **Why it matters** line, and rates its GCC relevance. That corrects keyword mistakes, such as a person's surname "Al Kuwaiti" being tagged as Kuwait.
 
 1. Create an API key at **console.anthropic.com → API keys**.
 2. In GitHub, open the repo's **Settings → Secrets and variables → Actions → New repository secret**. Name it `ANTHROPIC_API_KEY` and paste the key.
@@ -212,8 +212,8 @@ cyberdigest/
 ├── manifest.webmanifest     PWA install metadata
 ├── sw.js                    Offline cache (network-first)
 ├── data/feed.json           Generated news feed (refreshed by CI)
-├── tools/fetch_feeds.py     Feed builder: fetch → tag → split into ideas
-├── tools/ai_summaries.py    Optional Claude summaries: key ideas, why it matters, GCC relevance
+├── tools/fetch_feeds.py     Feed builder: fetch → tag → split into key points
+├── tools/ai_summaries.py    Optional Claude summaries: key points, why it matters, GCC relevance
 ├── tools/requirements.txt   Pinned `anthropic` SDK for AI summaries
 └── assets/
     ├── css/app.css          Styles (light/dark, mobile-first)
