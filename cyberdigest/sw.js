@@ -1,8 +1,8 @@
 /* CyberDigest service worker — app shell offline, network-first so news stays fresh. */
-const CACHE = 'cyberdigest-v3';
+const CACHE = 'cyberdigest-v4';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest', './data/feed.json',
-  './assets/css/app.css', './assets/js/data.js', './assets/js/store.js', './assets/js/app.js',
+  './assets/css/app.css', './assets/css/immersive.css', './assets/js/data.js', './assets/js/store.js', './assets/js/app.js',
   './assets/icons/icon.svg', './assets/icons/icon-192.png', './assets/icons/icon-512.png',
 ];
 

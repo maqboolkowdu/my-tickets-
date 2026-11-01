@@ -64,6 +64,7 @@ body[data-route="today"] .page-head { display: none; }
 .badge.gcc { background: #111; color: #fffdf8; }
 
 /* ---------- Today: split hero ---------- */
+.hero3d { display: none; } /* shown by the immersive design (immersive.css) */
 .split { display: grid; grid-template-columns: minmax(0, 1fr); border: var(--line); background: var(--surface); }
 .brief { background: var(--accent); color: #111; padding: var(--pad); display: grid; gap: 14px; align-content: center; border-bottom: var(--line); }
 .brief-hint { font-size: 14px; font-weight: 600; display: none; }

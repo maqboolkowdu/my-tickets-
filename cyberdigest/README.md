@@ -63,6 +63,17 @@ No server, database or account is needed. Your reading history, stashes and note
   - **Desktop:** a boxed top menu. Today shows your briefing panel next to the idea card, with the GCC spotlight as a 4-column grid below. Explore has a one-line search and filter bar and two columns of results.
   - **Mobile:** the same design stacked in one column, with a bottom menu.
 
+### Two designs: Flat or Immersive 3D
+
+Pick one in **Settings → Design**, or open the app with a link:
+
+| Design | Link | Look |
+|---|---|---|
+| **Flat (sustainable)** | `…/cyberdigest/?skin=flat` | Flat colour blocks with bold outlines (default) |
+| **Immersive 3D** | `…/cyberdigest/?skin=immersive` | Blueprint grid, giant mono headline, a rotating 3D cube and wireframe globe, cards that tilt with the mouse and sit on a 3D stack, flip-in animation |
+
+The 3D effects are built with CSS only (no 3D libraries, images or WebGL), so the immersive design adds only about 10 KB. All animation stops if your device is set to reduce motion.
+
 ### Sustainable web design
 
 The look follows the *sustainable web design* trend: flat colour blocks with bold ink outlines, as on the C40 Cities site. It also keeps the page light:
