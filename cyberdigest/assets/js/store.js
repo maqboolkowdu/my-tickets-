@@ -2,7 +2,7 @@
 (function () {
   const KEY = 'cyberdigest:v1';
   const DEFAULT = {
-    prefs: { topics: [], countries: ['AE', 'SA', 'QA', 'OM', 'BH', 'KW'], goal: 8, theme: 'system', skin: 'flat', onboarded: false },
+    prefs: { topics: [], countries: ['AE', 'SA', 'QA', 'OM', 'BH', 'KW'], goal: 8, theme: 'system', skin: 'immersive', skinChosen: false, onboarded: false },
     read: {},        // storyId -> timestamp
     days: {},        // 'YYYY-MM-DD' -> stories read that day
     saved: {},       // storyId -> { stash, note, savedAt, item }
@@ -20,6 +20,7 @@
   state.prefs = Object.assign({}, DEFAULT.prefs, state.prefs);
   const blog = state.stashes.find((s) => s.id === 'blog' && s.name === 'Ideas for my website');
   if (blog) blog.name = 'Bytes for my website'; // renamed when "ideas" became "bytes"
+  if (!state.prefs.skinChosen) state.prefs.skin = 'immersive'; // 3D is the default unless the user picked a design
 
   const save = () => localStorage.setItem(KEY, JSON.stringify(state));
 

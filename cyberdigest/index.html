@@ -16,9 +16,9 @@
   <script>
     try {
       const s = JSON.parse(localStorage.getItem('cyberdigest:v1') || '{}'), p = s.prefs || {};
-      const skin = new URLSearchParams(location.search).get('skin') || p.skin;
+      const skin = new URLSearchParams(location.search).get('skin') || (p.skinChosen ? p.skin : 'immersive');
       if (p.theme && p.theme !== 'system') document.documentElement.dataset.theme = p.theme;
-      if (skin === 'immersive') document.documentElement.dataset.skin = 'immersive';
+      if (skin !== 'flat') document.documentElement.dataset.skin = 'immersive';
     } catch (e) {}
   </script>
 </head>

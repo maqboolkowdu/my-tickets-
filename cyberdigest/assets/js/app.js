@@ -532,7 +532,7 @@
         <div class="row end"><button class="btn btn-primary" id="saveInterests">Save interests</button></div></section>
       <section class="panel">
         <h3>Design</h3>
-        <div class="chips">${[['flat', 'Flat (sustainable)'], ['immersive', 'Immersive 3D']].map(([v, l]) => `<label class="chip toggle-chip"><input type="radio" name="skin" value="${v}" ${(p.skin || 'flat') === v ? 'checked' : ''}/>${l}</label>`).join('')}</div>
+        <div class="chips">${[['immersive', 'Immersive 3D (default)'], ['flat', 'Flat (sustainable)']].map(([v, l]) => `<label class="chip toggle-chip"><input type="radio" name="skin" value="${v}" ${(p.skin || 'immersive') === v ? 'checked' : ''}/>${l}</label>`).join('')}</div>
         <h3>Appearance</h3>
         <div class="chips">${['system', 'light', 'dark'].map((t) => `<label class="chip toggle-chip"><input type="radio" name="theme" value="${t}" ${p.theme === t ? 'checked' : ''}/>${t[0].toUpperCase() + t.slice(1)}</label>`).join('')}</div>
       </section>
@@ -552,7 +552,7 @@
       </section></div>`;
     $('#saveInterests').addEventListener('click', () => { readInterests($('#interests')); toast("Interests saved. Today's stack was rebuilt."); renderChrome('settings'); });
     $$('input[name=theme]').forEach((r) => r.addEventListener('change', () => { Store.setPref('theme', r.value); applyTheme(); }));
-    $$('input[name=skin]').forEach((r) => r.addEventListener('change', () => { Store.setPref('skin', r.value); applyTheme(); toast(r.value === 'immersive' ? 'Immersive 3D design on' : 'Flat design on'); }));
+    $$('input[name=skin]').forEach((r) => r.addEventListener('change', () => { Store.setPref('skin', r.value); Store.setPref('skinChosen', true); applyTheme(); toast(r.value === 'immersive' ? 'Immersive 3D design on' : 'Flat design on'); }));
     $('#backup').addEventListener('click', () => download(`cyberdigest-backup-${dayKey()}.json`, Store.exportJSON(), 'application/json'));
     $('#restore').addEventListener('change', async (e) => {
       const f = e.target.files[0];
@@ -587,13 +587,13 @@
     const root = document.documentElement;
     if (theme === 'system') delete root.dataset.theme;
     else root.dataset.theme = theme;
-    if (skin === 'immersive') root.dataset.skin = 'immersive';
-    else delete root.dataset.skin;
+    if (skin === 'flat') delete root.dataset.skin;
+    else root.dataset.skin = 'immersive';
   }
 
   // A ?skin=flat or ?skin=immersive link switches design (handy for comparing the two).
   const skinParam = new URLSearchParams(location.search).get('skin');
-  if (skinParam === 'flat' || skinParam === 'immersive') Store.setPref('skin', skinParam);
+  if (skinParam === 'flat' || skinParam === 'immersive') { Store.setPref('skin', skinParam); Store.setPref('skinChosen', true); }
 
   $('#btnTheme').addEventListener('click', () => {
     const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;

@@ -69,8 +69,8 @@ Pick one in **Settings → Design**, or open the app with a link:
 
 | Design | Link | Look |
 |---|---|---|
-| **Flat (sustainable)** | `…/cyberdigest/?skin=flat` | Flat colour blocks with bold outlines (default) |
-| **Immersive 3D** | `…/cyberdigest/?skin=immersive` | Blueprint grid, giant mono headline, a rotating 3D cube and wireframe globe, cards that tilt with the mouse and sit on a 3D stack, flip-in animation |
+| **Flat (sustainable)** | `…/cyberdigest/?skin=flat` | Flat colour blocks with bold outlines |
+| **Immersive 3D** | `…/cyberdigest/?skin=immersive` | **Default.** Blueprint grid, giant mono headline, a rotating 3D cube and wireframe globe, cards that tilt with the mouse and sit on a 3D stack, flip-in animation |
 
 The 3D effects are built with CSS only (no 3D libraries, images or WebGL), so the immersive design adds only about 10 KB. All animation stops if your device is set to reduce motion.
 
